@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { createClient, getSupabaseEnv } from '../../lib/supabase/client';
+import { ensureUserProfile } from '../../lib/auth/profile';
 import { isPasswordValid } from '../../lib/auth/passwordRules';
 import { UserPlus, Loader2 } from 'lucide-react';
 
@@ -18,11 +19,13 @@ export default function SignupForm({ onPasswordChange }: SignupFormProps) {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+    setSuccess(null);
 
     if (!isPasswordValid(password)) {
       setError('Please meet all password requirements.');
@@ -36,29 +39,58 @@ export default function SignupForm({ onPasswordChange }: SignupFormProps) {
 
     if (!getSupabaseEnv().isConfigured) {
       setError(
-        'Supabase is not configured. Create a project at supabase.com, copy URL + anon key into .env.local, then restart npm run dev. See supabase/SETUP.md in this repo.'
+        'Supabase is not configured. Add keys to .env.local and restart npm run dev. See supabase/SETUP.md.'
       );
       return;
     }
 
     setLoading(true);
     const supabase = createClient();
+    const trimmedEmail = email.trim();
 
-    const { error: signUpError } = await supabase.auth.signUp({
-      email: email.trim(),
+    const { data, error: signUpError } = await supabase.auth.signUp({
+      email: trimmedEmail,
       password,
       options: {
         data: { full_name: fullName.trim() },
       },
     });
 
-    setLoading(false);
-
     if (signUpError) {
+      setLoading(false);
       setError(signUpError.message);
       return;
     }
 
+    if (!data.user) {
+      setLoading(false);
+      setError('Sign up failed. Please try again.');
+      return;
+    }
+
+    const profileResult = await ensureUserProfile(
+      supabase,
+      data.user.id,
+      trimmedEmail,
+      fullName.trim()
+    );
+
+    if (!profileResult.ok) {
+      setLoading(false);
+      setError(profileResult.error ?? 'Could not save your profile to the database.');
+      return;
+    }
+
+    if (!data.session) {
+      setLoading(false);
+      setSuccess(
+        'Account created. Check your email to confirm, then log in with the same password.'
+      );
+      router.push(`/login?registered=1&email=${encodeURIComponent(trimmedEmail)}`);
+      return;
+    }
+
+    setLoading(false);
     router.push('/dashboard');
     router.refresh();
   };
@@ -66,6 +98,7 @@ export default function SignupForm({ onPasswordChange }: SignupFormProps) {
   return (
     <form className="auth-form" onSubmit={handleSubmit}>
       {error && <div className="auth-alert auth-alert--error">{error}</div>}
+      {success && <div className="auth-alert auth-alert--warn">{success}</div>}
 
       <label className="auth-field">
         <span>Full name</span>

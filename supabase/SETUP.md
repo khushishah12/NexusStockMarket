@@ -65,12 +65,13 @@ Env vars load only at startup:
 npm run dev
 ```
 
-### Step 6: Run the database migration
+### Step 6: Run the database migrations
 
 1. Supabase dashboard → **SQL Editor** → **New query**
-2. Open `supabase/migrations/20260522000000_initial_schema.sql` from this repo
-3. Paste the full file → **Run**
-4. You should see success (creates `profiles` table + trigger)
+2. Run **both** files in order:
+   - `supabase/migrations/20260522000000_initial_schema.sql` (profiles + auth trigger)
+   - `supabase/migrations/20260522100000_dashboard_schema.sql` (watchlist table)
+3. Click **Run** for each
 
 ### Step 7: Auth URL settings
 
