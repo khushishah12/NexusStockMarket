@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { createClient } from '../../lib/supabase/client';
+import { createClient, getSupabaseEnv } from '../../lib/supabase/client';
 import { LogIn, Loader2 } from 'lucide-react';
 
 export default function LoginForm() {
@@ -19,6 +19,14 @@ export default function LoginForm() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+
+    if (!getSupabaseEnv().isConfigured) {
+      setError(
+        'Supabase is not configured. Create a project at supabase.com, copy URL + anon key into .env.local, then restart npm run dev. See supabase/SETUP.md in this repo.'
+      );
+      return;
+    }
+
     setLoading(true);
 
     const supabase = createClient();
