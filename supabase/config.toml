@@ -1,0 +1,22 @@
+# Supabase local development — run: npx supabase start
+# Apply migrations: npx supabase db push
+
+project_id = "ai-stock-dashboard-3d"
+
+[api]
+enabled = true
+port = 54321
+
+[db]
+port = 54322
+major_version = 15
+
+[auth]
+enabled = true
+site_url = "http://localhost:3000"
+additional_redirect_urls = ["http://localhost:3000/login", "http://localhost:3000/signup"]
+enable_signup = true
+
+[auth.email]
+enable_signup = true
+enable_confirmations = false
