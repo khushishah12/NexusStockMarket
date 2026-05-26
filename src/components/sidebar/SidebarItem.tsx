@@ -26,11 +26,11 @@ export default function SidebarItem({ item, collapsed, onNavigate }: SidebarItem
       href={item.href}
       onClick={onNavigate}
       title={collapsed ? item.label : undefined}
-      className={`group relative flex items-center gap-3 rounded-lg px-3 py-2.5 transition-all duration-200 ${
+      className={`group relative flex w-full min-h-[56px] items-center gap-3 rounded-2xl px-4 py-3 text-left transition-all duration-200 ${
         isActive
           ? `bg-white/[0.08] ${accent.glow}`
           : 'hover:bg-white/[0.05] hover:scale-[1.02]'
-      }`}
+      } ${collapsed ? 'justify-center' : 'justify-start'}`}
     >
       {isActive && (
         <motion.span

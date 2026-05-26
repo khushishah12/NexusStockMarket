@@ -3,177 +3,149 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { createClient, getSupabaseEnv } from '../../lib/supabase/client';
-import { ensureUserProfile } from '../../lib/auth/profile';
-import { isPasswordValid } from '../../lib/auth/passwordRules';
-import { UserPlus, Loader2 } from 'lucide-react';
+import { createClient } from '../../lib/supabase/client';
+import { Eye, EyeOff, UserPlus } from 'lucide-react';
+import { Button } from '../ui/button';
+import { Input } from '../ui/input';
+import { Label } from '../ui/label';
 
-interface SignupFormProps {
-  onPasswordChange?: (password: string) => void;
-}
-
-export default function SignupForm({ onPasswordChange }: SignupFormProps) {
+export default function SignupForm() {
   const router = useRouter();
-  const [fullName, setFullName] = useState('');
+  const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
-    setSuccess(null);
 
-    if (!isPasswordValid(password)) {
-      setError('Please meet all password requirements.');
+    if (!name.trim()) {
+      setError('Name is required.');
       return;
     }
-
-    if (password !== confirmPassword) {
-      setError('Passwords do not match.');
+    if (!email.trim()) {
+      setError('Email is required.');
       return;
     }
-
-    if (!getSupabaseEnv().isConfigured) {
-      setError(
-        'Supabase is not configured. Add keys to .env.local and restart npm run dev. See supabase/SETUP.md.'
-      );
+    if (password.length < 6) {
+      setError('Password must be at least 6 characters.');
       return;
     }
 
     setLoading(true);
     const supabase = createClient();
-    const trimmedEmail = email.trim();
 
-    const { data, error: signUpError } = await supabase.auth.signUp({
-      email: trimmedEmail,
-      password,
-      options: {
-        data: { full_name: fullName.trim() },
-      },
-    });
+    try {
+      // 1. Sign up the user with name in metadata
+      const { data, error: signUpError } = await supabase.auth.signUp({
+        email: email.trim(),
+        password,
+        options: {
+          data: {
+            name: name.trim(),
+          },
+        },
+      });
 
-    if (signUpError) {
+      if (signUpError) {
+        setError(signUpError.message);
+        setLoading(false);
+        return;
+      }
+
+      // 2. Attempt to insert profile record if user object is returned
+      if (data?.user) {
+        try {
+          await supabase.from('profiles').insert({
+            id: data.user.id,
+            name: name.trim(),
+            email: email.trim(),
+          });
+        } catch (profileError) {
+          console.warn('Failed to insert profile during signup (this is expected if email confirmation is required):', profileError);
+        }
+      }
+
+      // 3. Redirect user to /login
+      window.location.href = '/login?registered=true';
+    } catch (err: any) {
+      setError(err?.message || 'An unexpected error occurred during signup.');
+    } finally {
       setLoading(false);
-      setError(signUpError.message);
-      return;
     }
-
-    if (!data.user) {
-      setLoading(false);
-      setError('Sign up failed. Please try again.');
-      return;
-    }
-
-    const profileResult = await ensureUserProfile(
-      supabase,
-      data.user.id,
-      trimmedEmail,
-      fullName.trim()
-    );
-
-    if (!profileResult.ok) {
-      setLoading(false);
-      setError(profileResult.error ?? 'Could not save your profile to the database.');
-      return;
-    }
-
-    if (!data.session) {
-      setLoading(false);
-      setSuccess(
-        'Account created. Check your email to confirm, then log in with the same password.'
-      );
-      router.push(`/login?registered=1&email=${encodeURIComponent(trimmedEmail)}`);
-      return;
-    }
-
-    setLoading(false);
-    router.push('/dashboard');
-    router.refresh();
   };
 
   return (
-    <form className="auth-form" onSubmit={handleSubmit}>
-      {error && <div className="auth-alert auth-alert--error">{error}</div>}
-      {success && <div className="auth-alert auth-alert--warn">{success}</div>}
+    <form className="flex flex-col gap-4" onSubmit={handleSubmit} noValidate>
+      {error && (
+        <div className="rounded-lg bg-rose-500/10 border border-rose-500/30 p-3 text-sm text-rose-400">
+          {error}
+        </div>
+      )}
 
-      <label className="auth-field">
-        <span>Full name</span>
-        <input
+      <div className="flex flex-col gap-1.5">
+        <Label htmlFor="name">Name</Label>
+        <Input
+          id="name"
           type="text"
-          name="fullName"
-          autoComplete="name"
-          required
-          value={fullName}
-          onChange={(e) => setFullName(e.target.value)}
           placeholder="Alex Morgan"
-        />
-      </label>
-
-      <label className="auth-field">
-        <span>Email</span>
-        <input
-          type="email"
-          name="email"
-          autoComplete="email"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          disabled={loading}
           required
+        />
+      </div>
+
+      <div className="flex flex-col gap-1.5">
+        <Label htmlFor="email">Email</Label>
+        <Input
+          id="email"
+          type="email"
+          placeholder="you@company.com"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          placeholder="you@company.com"
-        />
-      </label>
-
-      <label className="auth-field">
-        <span>Password</span>
-        <input
-          type="password"
-          name="password"
-          autoComplete="new-password"
+          disabled={loading}
           required
-          value={password}
-          onChange={(e) => {
-            setPassword(e.target.value);
-            onPasswordChange?.(e.target.value);
-          }}
-          placeholder="••••••••"
         />
-      </label>
+      </div>
 
-      <label className="auth-field">
-        <span>Confirm password</span>
-        <input
-          type="password"
-          name="confirmPassword"
-          autoComplete="new-password"
-          required
-          value={confirmPassword}
-          onChange={(e) => setConfirmPassword(e.target.value)}
-          placeholder="••••••••"
-        />
-      </label>
+      <div className="flex flex-col gap-1.5">
+        <Label htmlFor="password">Password</Label>
+        <div className="relative">
+          <Input
+            id="password"
+            type={showPassword ? 'text' : 'password'}
+            placeholder="••••••••"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            disabled={loading}
+            required
+            className="pr-10"
+          />
+          <button
+            type="button"
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white transition-colors"
+            onClick={() => setShowPassword(!showPassword)}
+            aria-label={showPassword ? 'Hide password' : 'Show password'}
+          >
+            {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+          </button>
+        </div>
+      </div>
 
-      <button
-        type="submit"
-        className="auth-submit auth-submit--signup"
-        disabled={loading || !isPasswordValid(password)}
-      >
-        {loading ? (
-          <>
-            <Loader2 size={16} className="spin" /> Creating account…
-          </>
-        ) : (
-          <>
-            <UserPlus size={16} /> Sign up
-          </>
-        )}
-      </button>
+      <Button type="submit" isLoading={loading} className="w-full mt-2">
+        <UserPlus size={16} />
+        Sign up
+      </Button>
 
-      <p className="auth-switch">
+      <p className="text-center text-sm text-slate-400 mt-2">
         Already have an account?{' '}
-        <Link href="/login">Log in</Link>
+        <Link href="/login" className="text-emerald-400 hover:text-emerald-300 font-semibold transition-colors">
+          Log in
+        </Link>
       </p>
     </form>
   );

@@ -1,20 +1,35 @@
 'use client';
 
-import React, { useState } from 'react';
-import AuthLayout from '../../components/auth/AuthLayout';
+import React from 'react';
 import SignupForm from '../../components/auth/SignupForm';
-import PasswordRules from '../../components/auth/PasswordRules';
+import Link from 'next/link';
 
 export default function SignupPage() {
-  const [password, setPassword] = useState('');
-
   return (
-    <AuthLayout
-      title="Create your account"
-      subtitle="Join NEXUS.AI and unlock the full 3D market dashboard."
-      sidePanel={<PasswordRules password={password} />}
-    >
-      <SignupForm onPasswordChange={setPassword} />
-    </AuthLayout>
+    <div className="relative min-h-screen flex flex-col justify-center items-center px-4 bg-[#030308] text-white">
+      {/* Background decorations matching the dashboard */}
+      <div className="pointer-events-none fixed inset-0 bg-[radial-gradient(ellipse_at_top_left,rgba(0,229,255,0.08),transparent_50%),radial-gradient(ellipse_at_bottom_right,rgba(255,51,102,0.06),transparent_50%)]" />
+      <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-white/10 to-transparent" />
+      
+      <div className="w-full max-w-md z-10">
+        <div className="text-center mb-8">
+          <Link href="/" className="inline-flex items-center gap-2 mb-4">
+            <span className="h-2.5 w-2.5 rounded-full bg-emerald-400 shadow-[0_0_12px_#00ff88] animate-pulse" />
+            <span className="text-xl font-bold tracking-widest text-white">
+              NEXUS<span className="text-emerald-400">.AI</span>
+            </span>
+          </Link>
+          <h1 className="text-2xl font-bold tracking-tight text-white mt-2">Create your account</h1>
+          <p className="text-sm text-slate-400 mt-1.5">
+            Join NEXUS.AI and unlock the full 3D market dashboard.
+          </p>
+        </div>
+
+        <div className="relative rounded-2xl border border-white/10 bg-slate-950/70 p-6 md:p-8 shadow-2xl backdrop-blur-xl">
+          <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-emerald-500/50 to-transparent rounded-t-2xl" />
+          <SignupForm />
+        </div>
+      </div>
+    </div>
   );
 }

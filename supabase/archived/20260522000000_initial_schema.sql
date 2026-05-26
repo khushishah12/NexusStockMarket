@@ -1,0 +1,1 @@
+-- This migration has been superseded. No actions required.

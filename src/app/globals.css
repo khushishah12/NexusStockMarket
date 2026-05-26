@@ -134,7 +134,15 @@ body::-webkit-scrollbar {
   border-color: var(--text-primary);
   background: rgba(255, 255, 255, 0.05);
 }
+.dashboard-main {
+  margin-left: 0;
+}
 
+@media (min-width: 1024px) {
+  .dashboard-main {
+    margin-left: var(--sidebar-width);
+  }
+}
 /* Scroll Content Sections */
 .content-container {
   flex-grow: 1;
@@ -610,6 +618,19 @@ body::-webkit-scrollbar {
   line-height: 1.5;
   margin-bottom: 1.75rem;
 }
+
+.dashboard-main {
+  margin-left: 0;
+  width: 100%;
+}
+
+@media (min-width: 1024px) {
+  .dashboard-main {
+    margin-left: var(--sidebar-width);
+    width: calc(100% - var(--sidebar-width));
+  }
+}
+
 
 .auth-side-panel {
   flex: 1;
