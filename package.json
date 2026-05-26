@@ -13,7 +13,7 @@
     "@react-three/fiber": "^9.6.1",
     "@react-three/postprocessing": "^3.0.4",
     "@supabase/ssr": "^0.8.0",
-    "@supabase/supabase-js": "^2.106.1",
+    "@supabase/supabase-js": "^2.106.2",
     "@tailwindcss/postcss": "^4.1.8",
     "@types/three": "^0.184.1",
     "framer-motion": "^12.9.2",
@@ -26,6 +26,7 @@
     "supabase": "^2.101.0",
     "tailwindcss": "^4.1.8",
     "three": "^0.184.0",
+    "yahoo-finance2": "^3.14.1",
     "zustand": "^5.0.13"
   },
   "devDependencies": {

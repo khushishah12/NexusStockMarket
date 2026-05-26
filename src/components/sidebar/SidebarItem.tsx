@@ -13,10 +13,11 @@ interface SidebarItemProps {
 
 export default function SidebarItem({ item, collapsed, onNavigate }: SidebarItemProps) {
   const pathname = usePathname();
-  const isActive =
-    item.href === '/dashboard'
+  const isActive = pathname
+    ? item.href === '/dashboard'
       ? pathname === '/dashboard'
-      : pathname.startsWith(item.href);
+      : pathname.startsWith(item.href)
+    : false;
 
   const accent = ACCENT_STYLES[item.accent];
   const Icon = item.icon;
