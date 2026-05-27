@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { ArrowLeft, TrendingUp, Loader2, ExternalLink, Clock, BookOpen, Newspaper, BarChart3, LineChart, Target, PieChart, Wallet, Info, Search } from 'lucide-react';
+import { ArrowLeft, TrendingUp, Loader2, ExternalLink, Clock, BookOpen, Newspaper, BarChart3, LineChart, Target, PieChart, Wallet, Info, Search, Shield } from 'lucide-react';
 import PageTransition from '../../../../components/dashboard/PageTransition';
 import GlassCard from '../../../../components/dashboard/GlassCard';
 
@@ -181,6 +181,8 @@ export default function ChartDetailPage() {
   const [selectedIdx, setSelectedIdx] = useState(-1);
   const searchRef = useRef<HTMLDivElement>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
+  const [patterns, setPatterns] = useState<any[] | null>(null);
+  const [patternsLoading, setPatternsLoading] = useState(false);
 
   const doSearch = useCallback(async (q: string) => {
     if (q.trim().length < 1) { setSearchResults([]); return; }
@@ -235,6 +237,13 @@ export default function ChartDetailPage() {
       })
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false));
+
+    setPatternsLoading(true);
+    fetch(`/api/stocks/${encodeURIComponent(symbol)}/patterns`)
+      .then((r) => r.json())
+      .then((data) => { if (data.patterns) setPatterns(data.patterns); })
+      .catch(() => {})
+      .finally(() => setPatternsLoading(false));
   }, [symbol]);
 
   /* ---- Loading / Error ---- */
@@ -642,6 +651,64 @@ export default function ChartDetailPage() {
             <InfoRow label="Levered Free Cash Flow (ttm)" value={fmtCurrency(fin.levered_free_cash_flow)} />
           </div>
         </div>
+      </GlassCard>
+
+      {/*  CHART PATTERNS                                               */}
+      <GlassCard accent="neutral" className="mb-4 border-l-2 border-l-cyan-500/30">
+        <div className="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-cyan-300">
+          <Shield className="h-3.5 w-3.5" />
+          Chart Pattern Detection
+        </div>
+
+        {patternsLoading && (
+          <div className="flex items-center justify-center py-8">
+            <Loader2 className="h-5 w-5 animate-spin text-cyan-400" />
+            <span className="ml-2 text-xs text-slate-400">Scanning patterns...</span>
+          </div>
+        )}
+
+        {!patternsLoading && (!patterns || patterns.length === 0) && (
+          <p className="text-sm text-slate-500">No chart patterns detected in the analyzed timeframes.</p>
+        )}
+
+        {!patternsLoading && patterns && patterns.length > 0 && (
+          <div className="space-y-3">
+            {patterns.slice(0, 5).map((p, i) => (
+              <div key={i} className="rounded-lg border border-white/[0.06] bg-black/20 p-4">
+                <div className="mb-2 flex flex-wrap items-center gap-2">
+                  <span className="text-sm font-bold text-white">{p.pattern_name}</span>
+                  <span className={`rounded px-1.5 py-0.5 text-[10px] font-medium ${
+                    p.risk_level === 'Low' ? 'bg-emerald-500/10 text-emerald-400'
+                      : p.risk_level === 'Medium' ? 'bg-amber-500/10 text-amber-400'
+                      : 'bg-rose-500/10 text-rose-400'
+                  }`}>{p.risk_level} Risk</span>
+                  <span className="rounded bg-cyan-500/10 px-1.5 py-0.5 text-[10px] text-cyan-300">{p.confidence_percent}%</span>
+                  <span className="rounded bg-white/5 px-1.5 py-0.5 text-[10px] text-slate-400">{p.category}</span>
+                  <span className="text-[10px] text-slate-500">{p.detected_on_timeframe}</span>
+                </div>
+                <p className="text-xs text-slate-400">{p.explanation}</p>
+                {(p.theoretical_target_price != null || p.stoploss != null) && (
+                  <div className="mt-2 flex flex-wrap gap-4 text-xs">
+                    {p.theoretical_target_price != null && (
+                      <span className="text-emerald-400">Target: ₹{p.theoretical_target_price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                    )}
+                    {p.stoploss != null && (
+                      <span className="text-rose-400">Stop: ₹{p.stoploss.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                    )}
+                  </div>
+                )}
+                <div className="mt-2 flex gap-3 text-[10px] text-slate-500">
+                  {p.suitable_for_intraday && <span className="rounded bg-white/5 px-1.5 py-0.5">Intraday ✓</span>}
+                  {p.suitable_for_swing && <span className="rounded bg-white/5 px-1.5 py-0.5">Swing ✓</span>}
+                  <span>Region: [{p.pattern_region?.start_index}–{p.pattern_region?.end_index}]</span>
+                </div>
+              </div>
+            ))}
+            {patterns.length > 5 && (
+              <p className="text-xs text-slate-500">+{patterns.length - 5} more patterns detected</p>
+            )}
+          </div>
+        )}
       </GlassCard>
 
       {/* About (extra) */}
