@@ -2,12 +2,12 @@
 
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronLeft, ChevronRight, Menu, X, LogOut, Loader2 } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Menu, X, LogOut, Loader2, CheckCircle2, AlertCircle } from 'lucide-react';
 import { SIDEBAR_NAV_ITEMS } from './sidebarData';
 import SidebarItem from './SidebarItem';
 import { createClient } from '../../lib/supabase/client';
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 export interface SidebarControlProps {
   collapsed: boolean;
@@ -33,6 +33,29 @@ export default function Sidebar({
 }: SidebarProps) {
   const router = useRouter();
   const [loggingOut, setLoggingOut] = useState(false);
+  const [discovering, setDiscovering] = useState(false);
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+
+  useEffect(() => {
+    if (!toast) return;
+    const timer = setTimeout(() => setToast(null), 5000);
+    return () => clearTimeout(timer);
+  }, [toast]);
+
+  const handleDiscover = async () => {
+    setDiscovering(true);
+    setToast(null);
+    try {
+      const res = await fetch('/api/stocks/discover', { method: 'POST' });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+      setToast({ message: data.message || `Added ${data.added} stocks`, type: 'success' });
+    } catch (e) {
+      setToast({ message: e instanceof Error ? e.message : 'Discovery failed', type: 'error' });
+    } finally {
+      setDiscovering(false);
+    }
+  };
 
   const handleLogout = async () => {
     setLoggingOut(true);
@@ -82,11 +105,28 @@ export default function Sidebar({
             item={item}
             collapsed={collapsed}
             onNavigate={closeMobile}
+            onAction={item.type === 'action' ? handleDiscover : undefined}
+            isActionLoading={item.type === 'action' ? discovering : undefined}
           />
         ))}
       </nav>
 
-      <div className="mt-auto space-y-4 border-t border-white/10 px-4 pt-4 pb-10">
+      <div className="mt-auto space-y-3 border-t border-white/10 px-4 pt-4 pb-10">
+        {toast && !collapsed && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 10 }}
+            className={`flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-medium ${
+              toast.type === 'success'
+                ? 'bg-emerald-500/10 text-emerald-300 border border-emerald-500/20'
+                : 'bg-rose-500/10 text-rose-300 border border-rose-500/20'
+            }`}
+          >
+            {toast.type === 'success' ? <CheckCircle2 size={14} /> : <AlertCircle size={14} />}
+            <span className="flex-1">{toast.message}</span>
+          </motion.div>
+        )}
         {!collapsed && userEmail ? (
           <div className="space-y-1">
             <p className="text-[10px] uppercase tracking-[0.3em] text-slate-500">User</p>

@@ -5,15 +5,20 @@ import { usePathname } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { ACCENT_STYLES, type SidebarNavItem } from './sidebarData';
 
+import { Loader2 } from 'lucide-react';
+
 interface SidebarItemProps {
   item: SidebarNavItem;
   collapsed: boolean;
   onNavigate?: () => void;
+  onAction?: () => void;
+  isActionLoading?: boolean;
 }
 
-export default function SidebarItem({ item, collapsed, onNavigate }: SidebarItemProps) {
+export default function SidebarItem({ item, collapsed, onNavigate, onAction, isActionLoading }: SidebarItemProps) {
   const pathname = usePathname();
-  const isActive = pathname
+  const isLink = item.type !== 'action';
+  const isActive = isLink && pathname
     ? item.href === '/dashboard'
       ? pathname === '/dashboard'
       : pathname.startsWith(item.href)
@@ -22,17 +27,14 @@ export default function SidebarItem({ item, collapsed, onNavigate }: SidebarItem
   const accent = ACCENT_STYLES[item.accent];
   const Icon = item.icon;
 
-  return (
-    <Link
-      href={item.href}
-      onClick={onNavigate}
-      title={collapsed ? item.label : undefined}
-      className={`group relative flex w-full min-h-[56px] items-center gap-3 rounded-2xl px-4 py-3 text-left transition-all duration-200 ${
-        isActive
-          ? `bg-white/[0.08] ${accent.glow}`
-          : 'hover:bg-white/[0.05] hover:scale-[1.02]'
-      } ${collapsed ? 'justify-center' : 'justify-start'}`}
-    >
+  const commonClasses = `group relative flex w-full min-h-[56px] items-center gap-3 rounded-2xl px-4 py-3 text-left transition-all duration-200 ${
+    isActive
+      ? `bg-white/[0.08] ${accent.glow}`
+      : 'hover:bg-white/[0.05] hover:scale-[1.02]'
+  } ${collapsed ? 'justify-center' : 'justify-start'} ${isActionLoading ? 'opacity-70 pointer-events-none' : ''}`;
+
+  const content = (
+    <>
       {isActive && (
         <motion.span
           layoutId="sidebar-active-bar"
@@ -46,7 +48,7 @@ export default function SidebarItem({ item, collapsed, onNavigate }: SidebarItem
           isActive ? accent.icon : 'text-slate-400 group-hover:text-white'
         }`}
       >
-        <Icon size={18} />
+        {isActionLoading ? <Loader2 size={18} className="animate-spin" /> : <Icon size={18} />}
       </span>
 
       {!collapsed && (
@@ -56,18 +58,36 @@ export default function SidebarItem({ item, collapsed, onNavigate }: SidebarItem
               isActive ? 'text-white' : 'text-slate-300 group-hover:text-white'
             }`}
           >
-            {item.label}
+            {isActionLoading ? 'Discovering...' : item.label}
           </span>
-          <span className="block truncate text-[10px] text-slate-500">{item.description}</span>
+          <span className="block truncate text-[10px] text-slate-500">
+            {isActionLoading ? 'Fetching stocks...' : item.description}
+          </span>
         </span>
       )}
 
       {collapsed && (
         <span className="pointer-events-none absolute left-full z-50 ml-3 hidden whitespace-nowrap rounded-md border border-white/10 bg-slate-900/95 px-3 py-2 text-xs text-white shadow-xl group-hover:block">
-          <span className="font-semibold">{item.label}</span>
-          <span className="mt-0.5 block text-slate-400">{item.description}</span>
+          <span className="font-semibold">{isActionLoading ? 'Discovering...' : item.label}</span>
+          <span className="mt-0.5 block text-slate-400">
+            {isActionLoading ? 'Fetching stocks...' : item.description}
+          </span>
         </span>
       )}
-    </Link>
+    </>
+  );
+
+  if (isLink) {
+    return (
+      <Link href={item.href} onClick={onNavigate} title={collapsed ? item.label : undefined} className={commonClasses}>
+        {content}
+      </Link>
+    );
+  }
+
+  return (
+    <button type="button" onClick={onAction} disabled={isActionLoading} title={collapsed ? item.label : undefined} className={commonClasses}>
+      {content}
+    </button>
   );
 }

@@ -6,10 +6,13 @@ import {
   Newspaper,
   Star,
   ShieldAlert,
+  Database,
   type LucideIcon,
 } from 'lucide-react';
 
 export type SidebarAccent = 'neutral' | 'bullish' | 'bearish';
+
+export type SidebarItemType = 'link' | 'action';
 
 export interface SidebarNavItem {
   id: string;
@@ -18,6 +21,7 @@ export interface SidebarNavItem {
   icon: LucideIcon;
   accent: SidebarAccent;
   description: string;
+  type?: SidebarItemType;
 }
 
 export const SIDEBAR_NAV_ITEMS: SidebarNavItem[] = [
@@ -76,6 +80,15 @@ export const SIDEBAR_NAV_ITEMS: SidebarNavItem[] = [
     icon: ShieldAlert,
     accent: 'bearish',
     description: 'Portfolio risk & volatility',
+  },
+  {
+    id: 'add-script',
+    label: 'Add Script',
+    href: '#',
+    icon: Database,
+    accent: 'bullish',
+    description: 'Discover & save NSE/BSE stocks',
+    type: 'action',
   },
 ];
 

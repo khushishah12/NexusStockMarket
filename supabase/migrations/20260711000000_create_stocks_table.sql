@@ -1,9 +1,9 @@
-// supabase/migrations/20260711000000_create_stocks_table.sql
 CREATE TABLE IF NOT EXISTS public.stocks (
-  id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
-  symbol text NOT NULL,
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  symbol text NOT NULL UNIQUE,
   company_name text,
   exchange text,
   sector text,
+  industry text,
   created_at timestamp with time zone DEFAULT now()
 );
