@@ -111,6 +111,11 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
           highlight_polygon: JSON.stringify(p.highlight_polygon),
           anchor_points: JSON.stringify(p.anchor_points),
           explanation: p.explanation,
+          target_price: p.theoretical_target_price,
+          risk_level: p.risk_level,
+          stoploss: p.stoploss,
+          suitable_for_intraday: p.suitable_for_intraday,
+          suitable_for_swing: p.suitable_for_swing,
           created_at: new Date().toISOString(),
         }));
 
@@ -127,6 +132,25 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 
     // Cap at 20 most confident patterns
     const topPatterns = allPatterns.slice(0, 20);
+
+    // Build timeframe data for overlay charts
+    const timeframeData: Record<string, { timestamps: string[]; close: number[] }> = {};
+    for (let i = 0; i < timeframesToScan.length; i++) {
+      const tf = timeframesToScan[i];
+      const result = chartResults[i];
+      if (result.status !== 'fulfilled' || !result.value) continue;
+      const cd = result.value;
+      if (!cd?.timestamp || !cd?.indicators?.quote?.[0]?.close) continue;
+      const timestamps = cd.timestamp.map((t: number) => {
+        const d = new Date(t * 1000);
+        if (tf === '1D') return d.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
+        return d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
+      });
+      timeframeData[tf] = {
+        timestamps,
+        close: cd.indicators.quote[0].close as number[],
+      };
+    }
 
     const response = {
       symbol,
@@ -145,6 +169,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         suitable_for_intraday: p.suitable_for_intraday,
         suitable_for_swing: p.suitable_for_swing,
       })),
+      timeframe_data: timeframeData,
     };
 
     return NextResponse.json(response, { headers: { 'Cache-Control': 'no-store' } });

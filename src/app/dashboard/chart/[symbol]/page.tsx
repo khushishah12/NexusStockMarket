@@ -2,9 +2,10 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { ArrowLeft, TrendingUp, Loader2, ExternalLink, Clock, BookOpen, Newspaper, BarChart3, LineChart, Target, PieChart, Wallet, Info, Search, Shield } from 'lucide-react';
+import { ArrowLeft, TrendingUp, Loader2, ExternalLink, Clock, BookOpen, Newspaper, BarChart3, LineChart, Target, PieChart, Wallet, Info, Search, Shield, ShieldAlert } from 'lucide-react';
 import PageTransition from '../../../../components/dashboard/PageTransition';
 import GlassCard from '../../../../components/dashboard/GlassCard';
+import { buildOverlayChartUrl } from '../../../../lib/chart-overlay';
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                              */
@@ -181,8 +182,9 @@ export default function ChartDetailPage() {
   const [selectedIdx, setSelectedIdx] = useState(-1);
   const searchRef = useRef<HTMLDivElement>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
-  const [patterns, setPatterns] = useState<any[] | null>(null);
+  const [patternsData, setPatternsData] = useState<{ patterns: any[]; timeframe_data: Record<string, { timestamps: string[]; close: number[] }> } | null>(null);
   const [patternsLoading, setPatternsLoading] = useState(false);
+  const [showPatternOverlay, setShowPatternOverlay] = useState(false);
 
   const doSearch = useCallback(async (q: string) => {
     if (q.trim().length < 1) { setSearchResults([]); return; }
@@ -241,7 +243,10 @@ export default function ChartDetailPage() {
     setPatternsLoading(true);
     fetch(`/api/stocks/${encodeURIComponent(symbol)}/patterns`)
       .then((r) => r.json())
-      .then((data) => { if (data.patterns) setPatterns(data.patterns); })
+      .then((data) => {
+        if (data.patterns) setPatternsData(data);
+        if (data.patterns && data.patterns.length > 0) setShowPatternOverlay(false);
+      })
       .catch(() => {})
       .finally(() => setPatternsLoading(false));
   }, [symbol]);
@@ -364,13 +369,13 @@ export default function ChartDetailPage() {
       {/* ═══════════════════════════════════════════════════════════════ */}
       {/*  CHART (75% width)                                          */}
       <div className="mx-auto w-full lg:w-3/4">
-      <div className="mb-2 flex flex-wrap gap-2">
+      <div className="mb-2 flex flex-wrap items-center gap-2">
         {TIMEFRAMES.map((tf) => (
           <button
             key={tf}
-            onClick={() => setActiveTf(tf)}
+            onClick={() => { setActiveTf(tf); setShowPatternOverlay(false); }}
             className={`rounded-lg px-3 py-1.5 text-xs font-medium transition ${
-              activeTf === tf
+              activeTf === tf && !showPatternOverlay
                 ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40'
                 : 'bg-white/5 text-slate-400 border border-white/10 hover:bg-white/10'
             }`}
@@ -378,15 +383,40 @@ export default function ChartDetailPage() {
             {tf}
           </button>
         ))}
+        {/* Overlay toggle */}
+        {patternsData && patternsData.patterns.some((p) => p.detected_on_timeframe === activeTf) && (
+          <button
+            onClick={() => setShowPatternOverlay(!showPatternOverlay)}
+            className={`ml-auto flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition ${
+              showPatternOverlay
+                ? 'border border-amber-500/40 bg-amber-500/20 text-amber-300'
+                : 'border border-white/10 bg-white/5 text-slate-400 hover:bg-white/10'
+            }`}
+          >
+            <ShieldAlert className="h-3.5 w-3.5" />
+            {showPatternOverlay ? 'Hide Overlays' : `Pattern Overlay (${patternsData.patterns.filter((p) => p.detected_on_timeframe === activeTf).length})`}
+          </button>
+        )}
       </div>
 
       <GlassCard accent="neutral" className="mb-4">
-        <div className="flex min-h-[200px] items-center justify-center rounded-lg bg-slate-950/50 p-2">
-          {activeChart?.chartUrl ? (
-            <img src={activeChart.chartUrl} alt={`${detail.short_symbol} ${activeTf} chart`} className="max-h-[200px] w-full rounded-lg object-contain" />
-          ) : (
-            <p className="text-sm text-slate-500">Chart not available for {activeTf}</p>
-          )}
+        <div className="flex min-h-[420px] items-center justify-center rounded-lg bg-slate-950/50 p-4">
+          {(() => {
+            // Overlay chart
+            if (showPatternOverlay && patternsData && activeTf) {
+              const tfData = patternsData.timeframe_data[activeTf];
+              const tfPatterns = patternsData.patterns.filter((p) => p.detected_on_timeframe === activeTf);
+              if (tfData && tfData.close.length > 5 && tfPatterns.length > 0) {
+                const overlayUrl = buildOverlayChartUrl(symbol, activeTf, tfData.timestamps, tfData.close, tfPatterns);
+                if (overlayUrl) return <img src={overlayUrl} alt={`${symbol} ${activeTf} with patterns`} className="max-h-[500px] w-full rounded-lg object-contain" />;
+              }
+            }
+            // Basic chart
+            if (activeChart?.chartUrl) {
+              return <img src={activeChart.chartUrl} alt={`${detail.short_symbol} ${activeTf} chart`} className="max-h-[500px] w-full rounded-lg object-contain" />;
+            }
+            return <p className="text-sm text-slate-500">Chart not available for {activeTf}</p>;
+          })()}
         </div>
       </GlassCard>
       </div>
@@ -667,13 +697,13 @@ export default function ChartDetailPage() {
           </div>
         )}
 
-        {!patternsLoading && (!patterns || patterns.length === 0) && (
+        {!patternsLoading && (!patternsData || patternsData.patterns.length === 0) && (
           <p className="text-sm text-slate-500">No chart patterns detected in the analyzed timeframes.</p>
         )}
 
-        {!patternsLoading && patterns && patterns.length > 0 && (
+        {!patternsLoading && patternsData && patternsData.patterns.length > 0 && (
           <div className="space-y-3">
-            {patterns.slice(0, 5).map((p, i) => (
+            {patternsData.patterns.slice(0, 5).map((p, i) => (
               <div key={i} className="rounded-lg border border-white/[0.06] bg-black/20 p-4">
                 <div className="mb-2 flex flex-wrap items-center gap-2">
                   <span className="text-sm font-bold text-white">{p.pattern_name}</span>
@@ -704,8 +734,8 @@ export default function ChartDetailPage() {
                 </div>
               </div>
             ))}
-            {patterns.length > 5 && (
-              <p className="text-xs text-slate-500">+{patterns.length - 5} more patterns detected</p>
+            {patternsData.patterns.length > 5 && (
+              <p className="text-xs text-slate-500">+{patternsData.patterns.length - 5} more patterns detected</p>
             )}
           </div>
         )}
