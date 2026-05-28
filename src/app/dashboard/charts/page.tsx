@@ -3,9 +3,11 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import {
   Search, ArrowUpRight, ArrowDownRight, Loader2, Globe,
+  Maximize, Sigma, Minus, Crosshair as CrosshairIcon,
+  Lock, Unlock,
 } from 'lucide-react';
 import CandlestickChart from '@/components/dashboard/CandlestickChart';
-import type { OHLCVPoint, PatternInfo } from '@/components/dashboard/CandlestickChart';
+import type { OHLCVPoint, PatternInfo, TrendLine } from '@/components/dashboard/CandlestickChart';
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                              */
@@ -42,6 +44,14 @@ export default function ChartsPage() {
   const [chartLoading, setChartLoading] = useState(false);
   const [searchVisible, setSearchVisible] = useState(true);
   const [focused, setFocused] = useState(false);
+
+  const [scaleMode, setScaleMode] = useState<'linear' | 'log'>('linear');
+  const [trendLineMode, setTrendLineMode] = useState(false);
+  const [verticalLock, setVerticalLock] = useState(false);
+  const [crosshairEnabled, setCrosshairEnabled] = useState(true);
+  const [trendLines, setTrendLines] = useState<TrendLine[]>([]);
+
+  const autoScaleKey = useRef(0);
   const hideTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
   const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -109,6 +119,8 @@ export default function ChartsPage() {
     setChartLoading(true);
     setOhlcv([]);
     setPatterns([]);
+    setTrendLines([]);
+    autoScaleKey.current = 0;
 
     Promise.all([
       fetch(`/api/stocks/${encodeURIComponent(selectedSymbol)}/ohlcv?timeframe=${timeframe}`).then((r) => r.json()),
@@ -163,7 +175,6 @@ export default function ChartsPage() {
             )}
           </div>
 
-          {/* Results dropdown */}
           {query.length > 0 && results.length === 0 && !loading && (
             <p className="py-6 text-center text-sm text-slate-500">No stocks found for &quot;{query}&quot;</p>
           )}
@@ -217,23 +228,84 @@ export default function ChartsPage() {
 
       {/* ── Main content ── */}
       <div className="flex flex-1 flex-col overflow-hidden">
-        {/* Timeframe bar */}
+        {/* Toolbar + Timeframe bar */}
         {selectedSymbol && (
-          <div className="flex items-center gap-1.5 border-b border-white/5 px-4 py-2">
+          <div className="flex flex-wrap items-center gap-2 border-b border-white/5 px-4 py-2">
+            {/* Symbol */}
             <span className="mr-2 text-sm font-bold text-white">{selectedSymbol}</span>
-            {TIMEFRAMES.map((tf) => (
+
+            {/* Timeframes */}
+            <div className="flex flex-wrap gap-1">
+              {TIMEFRAMES.map((tf) => (
+                <button
+                  key={tf}
+                  onClick={() => setTimeframe(tf)}
+                  className={`rounded-lg px-2.5 py-1 text-xs font-medium transition ${
+                    timeframe === tf
+                      ? 'border border-cyan-500/40 bg-cyan-500/20 text-cyan-300'
+                      : 'border border-transparent text-slate-500 hover:text-white'
+                  }`}
+                >
+                  {tf}
+                </button>
+              ))}
+            </div>
+
+            {/* Spacer */}
+            <div className="ml-auto flex items-center gap-1">
+              {/* Auto-scale */}
               <button
-                key={tf}
-                onClick={() => setTimeframe(tf)}
-                className={`rounded-lg px-2.5 py-1 text-xs font-medium transition ${
-                  timeframe === tf
-                    ? 'border border-cyan-500/40 bg-cyan-500/20 text-cyan-300'
-                    : 'border border-transparent text-slate-500 hover:text-white'
+                onClick={() => autoScaleKey.current++}
+                title="Auto-scale (A)"
+                className="rounded-lg p-1.5 text-slate-500 transition hover:bg-white/5 hover:text-white"
+              >
+                <Maximize className="h-3.5 w-3.5" />
+              </button>
+
+              {/* Log/Linear */}
+              <button
+                onClick={() => setScaleMode(s => s === 'linear' ? 'log' : 'linear')}
+                title={`Toggle ${scaleMode === 'linear' ? 'log' : 'linear'} scale`}
+                className={`rounded-lg p-1.5 transition ${
+                  scaleMode === 'log' ? 'bg-amber-500/20 text-amber-400' : 'text-slate-500 hover:bg-white/5 hover:text-white'
                 }`}
               >
-                {tf}
+                <Sigma className="h-3.5 w-3.5" />
               </button>
-            ))}
+
+              {/* Crosshair */}
+              <button
+                onClick={() => setCrosshairEnabled(c => !c)}
+                title="Toggle crosshair"
+                className={`rounded-lg p-1.5 transition ${
+                  crosshairEnabled ? 'bg-cyan-500/20 text-cyan-400' : 'text-slate-500 hover:bg-white/5 hover:text-white'
+                }`}
+              >
+                <CrosshairIcon className="h-3.5 w-3.5" />
+              </button>
+
+              {/* Vertical lock */}
+              <button
+                onClick={() => setVerticalLock(v => !v)}
+                title="Toggle vertical lock (V)"
+                className={`rounded-lg p-1.5 transition ${
+                  verticalLock ? 'bg-purple-500/20 text-purple-400' : 'text-slate-500 hover:bg-white/5 hover:text-white'
+                }`}
+              >
+                {verticalLock ? <Lock className="h-3.5 w-3.5" /> : <Unlock className="h-3.5 w-3.5" />}
+              </button>
+
+              {/* Trend line */}
+              <button
+                onClick={() => setTrendLineMode(t => !t)}
+                title="Trend line mode (T)"
+                className={`rounded-lg p-1.5 transition ${
+                  trendLineMode ? 'bg-blue-500/20 text-blue-400 ring-1 ring-blue-500/40' : 'text-slate-500 hover:bg-white/5 hover:text-white'
+                }`}
+              >
+                <Minus className="h-3.5 w-3.5" />
+              </button>
+            </div>
           </div>
         )}
 
@@ -247,11 +319,17 @@ export default function ChartsPage() {
 
           {selectedSymbol && !chartLoading && (
             <CandlestickChart
+              key={selectedSymbol + timeframe + autoScaleKey.current}
               data={ohlcv}
               patterns={patterns}
               symbol={selectedSymbol}
               timeframe={timeframe}
               className="h-full w-full"
+              liveInterval={timeframe === '1D' ? 30 : 60}
+              scaleMode={scaleMode}
+              trendLines={trendLines}
+              onTrendLinesChange={setTrendLines}
+              crosshairEnabled={crosshairEnabled}
             />
           )}
 
