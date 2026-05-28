@@ -32,7 +32,7 @@ function tfInterval(tf: Timeframe): '5m' | '15m' | '1h' | '1d' | '1wk' | '1mo' {
 
 async function ensureTable(): Promise<boolean> {
   const sql = `
-    CREATE TABLE IF NOT EXISTS pattern_detections (
+    CREATE TABLE IF NOT EXISTS public.pattern_detections (
       id BIGSERIAL PRIMARY KEY,
       symbol TEXT NOT NULL,
       timeframe TEXT NOT NULL,
@@ -43,9 +43,21 @@ async function ensureTable(): Promise<boolean> {
       highlight_polygon JSONB,
       anchor_points JSONB,
       explanation TEXT,
+      target_price DOUBLE PRECISION,
+      risk_level TEXT,
+      stoploss DOUBLE PRECISION,
+      suitable_for_intraday BOOLEAN DEFAULT false,
+      suitable_for_swing BOOLEAN DEFAULT false,
       created_at TIMESTAMPTZ DEFAULT NOW()
     );
-    CREATE INDEX IF NOT EXISTS idx_pattern_detections_symbol ON pattern_detections(symbol);
+    ALTER TABLE public.pattern_detections ADD COLUMN IF NOT EXISTS target_price DOUBLE PRECISION;
+    ALTER TABLE public.pattern_detections ADD COLUMN IF NOT EXISTS risk_level TEXT;
+    ALTER TABLE public.pattern_detections ADD COLUMN IF NOT EXISTS stoploss DOUBLE PRECISION;
+    ALTER TABLE public.pattern_detections ADD COLUMN IF NOT EXISTS suitable_for_intraday BOOLEAN DEFAULT false;
+    ALTER TABLE public.pattern_detections ADD COLUMN IF NOT EXISTS suitable_for_swing BOOLEAN DEFAULT false;
+    CREATE INDEX IF NOT EXISTS idx_pattern_detections_symbol ON public.pattern_detections (symbol);
+    CREATE INDEX IF NOT EXISTS idx_pattern_detections_created_at ON public.pattern_detections (created_at DESC);
+    CREATE INDEX IF NOT EXISTS idx_pattern_detections_lookup ON public.pattern_detections (symbol, timeframe, pattern_name);
   `;
   return runSql(sql);
 }

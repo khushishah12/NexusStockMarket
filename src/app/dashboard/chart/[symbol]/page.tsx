@@ -5,7 +5,6 @@ import { useParams, useRouter } from 'next/navigation';
 import { ArrowLeft, TrendingUp, Loader2, ExternalLink, Clock, BookOpen, Newspaper, BarChart3, LineChart, Target, PieChart, Wallet, Info, Search, Shield, ShieldAlert } from 'lucide-react';
 import PageTransition from '../../../../components/dashboard/PageTransition';
 import GlassCard from '../../../../components/dashboard/GlassCard';
-import { buildOverlayChartUrl } from '../../../../lib/chart-overlay';
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                              */
@@ -185,6 +184,8 @@ export default function ChartDetailPage() {
   const [patternsData, setPatternsData] = useState<{ patterns: any[]; timeframe_data: Record<string, { timestamps: string[]; close: number[] }> } | null>(null);
   const [patternsLoading, setPatternsLoading] = useState(false);
   const [showPatternOverlay, setShowPatternOverlay] = useState(false);
+  const [overlayChartUrl, setOverlayChartUrl] = useState<string | null>(null);
+  const [overlayLoading, setOverlayLoading] = useState(false);
 
   const doSearch = useCallback(async (q: string) => {
     if (q.trim().length < 1) { setSearchResults([]); return; }
@@ -250,6 +251,24 @@ export default function ChartDetailPage() {
       .catch(() => {})
       .finally(() => setPatternsLoading(false));
   }, [symbol]);
+
+  /* ---- Fetch overlay chart from visualize API ---- */
+  useEffect(() => {
+    if (!showPatternOverlay || !symbol) { setOverlayChartUrl(null); return; }
+    setOverlayLoading(true);
+    const tfPatterns = patternsData?.patterns.filter((p) => p.detected_on_timeframe === activeTf) || [];
+    const body: any = { timeframe: activeTf };
+    if (tfPatterns.length > 0) body.patterns = tfPatterns;
+    fetch(`/api/stocks/${encodeURIComponent(symbol)}/visualize`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    })
+      .then((r) => r.json())
+      .then((data) => { if (data.chart_url) setOverlayChartUrl(data.chart_url); })
+      .catch(() => {})
+      .finally(() => setOverlayLoading(false));
+  }, [showPatternOverlay, symbol, activeTf, patternsData]);
 
   /* ---- Loading / Error ---- */
   if (loading) {
@@ -401,22 +420,18 @@ export default function ChartDetailPage() {
 
       <GlassCard accent="neutral" className="mb-4">
         <div className="flex min-h-[420px] items-center justify-center rounded-lg bg-slate-950/50 p-4">
-          {(() => {
-            // Overlay chart
-            if (showPatternOverlay && patternsData && activeTf) {
-              const tfData = patternsData.timeframe_data[activeTf];
-              const tfPatterns = patternsData.patterns.filter((p) => p.detected_on_timeframe === activeTf);
-              if (tfData && tfData.close.length > 5 && tfPatterns.length > 0) {
-                const overlayUrl = buildOverlayChartUrl(symbol, activeTf, tfData.timestamps, tfData.close, tfPatterns);
-                if (overlayUrl) return <img src={overlayUrl} alt={`${symbol} ${activeTf} with patterns`} className="max-h-[500px] w-full rounded-lg object-contain" />;
-              }
-            }
-            // Basic chart
-            if (activeChart?.chartUrl) {
-              return <img src={activeChart.chartUrl} alt={`${detail.short_symbol} ${activeTf} chart`} className="max-h-[500px] w-full rounded-lg object-contain" />;
-            }
-            return <p className="text-sm text-slate-500">Chart not available for {activeTf}</p>;
-          })()}
+          {(overlayLoading || patternsLoading) && (
+            <Loader2 className="h-8 w-8 animate-spin text-cyan-400" />
+          )}
+          {!overlayLoading && !patternsLoading && showPatternOverlay && overlayChartUrl && (
+            <img src={overlayChartUrl} alt={`${symbol} ${activeTf} with patterns`} className="max-h-[500px] w-full rounded-lg object-contain" />
+          )}
+          {!overlayLoading && !patternsLoading && (!showPatternOverlay || !overlayChartUrl) && activeChart?.chartUrl && (
+            <img src={activeChart.chartUrl} alt={`${detail.short_symbol} ${activeTf} chart`} className="max-h-[500px] w-full rounded-lg object-contain" />
+          )}
+          {!overlayLoading && !patternsLoading && (!activeChart?.chartUrl && !overlayChartUrl) && (
+            <p className="text-sm text-slate-500">Chart not available for {activeTf}</p>
+          )}
         </div>
       </GlassCard>
       </div>
