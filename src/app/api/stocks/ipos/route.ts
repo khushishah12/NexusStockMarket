@@ -4,48 +4,6 @@ import { runSql } from '@/lib/run-sql';
 
 export const dynamic = 'force-dynamic';
 
-const QUARTER_MAP = [
-  { quarter: 'Q1', months: [4, 5, 6], reportMonths: [7, 8] },
-  { quarter: 'Q2', months: [7, 8, 9], reportMonths: [10, 11] },
-  { quarter: 'Q3', months: [10, 11, 12], reportMonths: [1, 2] },
-  { quarter: 'Q4', months: [1, 2, 3], reportMonths: [4, 5] },
-];
-
-function findQuarter(date: Date): { quarter: string; fy: number } {
-  const m = date.getMonth() + 1;
-  const y = date.getFullYear();
-  for (const q of QUARTER_MAP) {
-    if (m >= q.months[0] && m <= q.months[2]) {
-      const fy = m >= 4 ? y + 1 : y;
-      return { quarter: q.quarter, fy };
-    }
-  }
-  return { quarter: 'Q1', fy: y };
-}
-
-function nextReportQuarter(): { quarter: string; fy: number; start: Date; end: Date } {
-  const now = new Date();
-  const m = now.getMonth() + 1;
-  const y = now.getFullYear();
-  for (const q of QUARTER_MAP) {
-    const reportStart = q.reportMonths[0];
-    const reportEnd = q.reportMonths[1];
-    if (m <= reportEnd) {
-      const fy = q.months[0] >= 4 ? y + 1 : y;
-      const start = new Date(y, reportStart - 1, 1);
-      const end = new Date(y, reportEnd, 0);
-      return { quarter: q.quarter, fy, start, end };
-    }
-  }
-  const first = QUARTER_MAP[0];
-  return { quarter: first.quarter, fy: y + 1, start: new Date(y + 1, 6, 1), end: new Date(y + 1, 7, 31) };
-}
-
-function randomDate(start: Date, end: Date): string {
-  const d = new Date(start.getTime() + Math.random() * (end.getTime() - start.getTime()));
-  return d.toISOString().split('T')[0];
-}
-
 const FALLBACK_STOCKS: { symbol: string; company_name: string; exchange: string; sector: string }[] = [
   { symbol: 'RELIANCE', company_name: 'Reliance Industries', exchange: 'NSE', sector: 'Energy' },
   { symbol: 'TCS', company_name: 'Tata Consultancy Services', exchange: 'NSE', sector: 'IT' },
@@ -83,8 +41,6 @@ const FALLBACK_STOCKS: { symbol: string; company_name: string; exchange: string;
   { symbol: 'DRREDDY', company_name: "Dr. Reddy's Labs", exchange: 'NSE', sector: 'Pharma' },
   { symbol: 'CIPLA', company_name: 'Cipla', exchange: 'NSE', sector: 'Pharma' },
   { symbol: 'APOLLOHOSP', company_name: 'Apollo Hospitals', exchange: 'NSE', sector: 'Healthcare' },
-  { symbol: 'SBILIFE', company_name: 'SBI Life Insurance', exchange: 'NSE', sector: 'Insurance' },
-  { symbol: 'HDFCLIFE', company_name: 'HDFC Life Insurance', exchange: 'NSE', sector: 'Insurance' },
   { symbol: 'MARICO', company_name: 'Marico', exchange: 'NSE', sector: 'FMCG' },
   { symbol: 'DABUR', company_name: 'Dabur India', exchange: 'NSE', sector: 'FMCG' },
   { symbol: 'BEL', company_name: 'Bharat Electronics', exchange: 'NSE', sector: 'Defence' },
@@ -100,68 +56,101 @@ const FALLBACK_STOCKS: { symbol: string; company_name: string; exchange: string;
   { symbol: 'COLPAL', company_name: 'Colgate-Palmolive', exchange: 'NSE', sector: 'FMCG' },
 ];
 
-const SAMPLE_EVENT_TYPES = ['quarterly_results', 'earnings', 'guidance', 'dividend'];
+const SECTORS = ['IT', 'Banking', 'Pharma', 'Auto', 'FMCG', 'Infra', 'Energy', 'Metals', 'Telecom', 'Consumer', 'Fintech', 'Logistics', 'Real Estate', 'Retail'];
+const STATUSES = ['upcoming', 'open', 'closed', 'listing'];
 
-function generateEvents(): any[] {
-  const nq = nextReportQuarter();
-  const events: any[] = [];
+function nextIpoDate(index: number): string {
+  const d = new Date();
+  d.setDate(d.getDate() + 3 + index * 4 + Math.floor(Math.random() * 3));
+  return d.toISOString().split('T')[0];
+}
+
+function randomPriceBand(): string {
+  const lo = Math.round((50 + Math.random() * 450) / 5) * 5;
+  const hi = lo + Math.round((20 + Math.random() * 80) / 5) * 5;
+  return `₹${lo} – ₹${hi}`;
+}
+
+function randomLotSize(): number {
+  const sizes = [30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 100, 120, 150, 200, 300, 500, 1000];
+  return sizes[Math.floor(Math.random() * sizes.length)];
+}
+
+function minInvestmentFrom(priceBand: string, lotSize: number): number {
+  const match = priceBand.match(/₹(\d+)/);
+  if (!match) return 15000;
+  return parseInt(match[1]) * lotSize;
+}
+
+function guessIssueType(name: string): string {
+  return name.toLowerCase().includes('sme') ? 'sme' : 'mainboard';
+}
+
+function generateIpos(): any[] {
+  const ipos: any[] = [];
   for (let i = 0; i < FALLBACK_STOCKS.length; i++) {
     const stock = FALLBACK_STOCKS[i];
-    const eventDate = randomDate(nq.start, nq.end);
-    const eventType = SAMPLE_EVENT_TYPES[Math.floor(Math.random() * SAMPLE_EVENT_TYPES.length)];
-    const eventTime = ['before_open', 'after_close', 'not_specified'][Math.floor(Math.random() * 3)];
-    events.push({
+    const priceBand = randomPriceBand();
+    const lotSize = randomLotSize();
+    const issueType = guessIssueType(stock.company_name);
+    const statusIdx = i < 5 ? 2 : i < 8 ? 1 : 0;
+    const status = STATUSES[Math.min(statusIdx, STATUSES.length - 1)];
+
+    ipos.push({
       id: i + 1,
       symbol: stock.symbol,
       company_name: stock.company_name,
       exchange: stock.exchange,
-      event_date: eventDate,
-      event_time: eventTime,
-      event_type: eventType,
+      ipo_date: nextIpoDate(i),
+      issue_type: issueType,
+      price_band: priceBand,
+      lot_size: lotSize,
+      min_investment: minInvestmentFrom(priceBand, lotSize),
       sector: stock.sector,
-      quarter: nq.quarter,
-      fiscal_year: nq.fy,
-      description: `${nq.quarter} FY${nq.fy} ${eventType === 'quarterly_results' ? 'Results' : eventType === 'dividend' ? 'Dividend' : eventType === 'guidance' ? 'Guidance' : 'Earnings'} - ${stock.company_name}`,
+      status,
+      description: `${issueType === 'sme' ? 'SME' : ''} IPO of ${stock.company_name} — ${stock.sector}`,
       source: 'system',
     });
   }
-  events.sort((a, b) => a.event_date.localeCompare(b.event_date));
-  return events;
+  ipos.sort((a, b) => a.ipo_date.localeCompare(b.ipo_date));
+  return ipos;
 }
 
-async function tryPersist(events: any[]) {
+async function tryPersist(ipos: any[]) {
   try {
     await runSql(`
-      CREATE TABLE IF NOT EXISTS public.earnings_calendar (
+      CREATE TABLE IF NOT EXISTS public.upcoming_ipos (
         id BIGSERIAL PRIMARY KEY,
         symbol TEXT NOT NULL,
         company_name TEXT DEFAULT '',
         exchange TEXT DEFAULT 'NSE',
-        event_date DATE NOT NULL,
-        event_time TEXT DEFAULT 'not_specified',
-        event_type TEXT DEFAULT 'quarterly_results',
+        ipo_date DATE NOT NULL,
+        issue_type TEXT DEFAULT 'mainboard',
+        price_band TEXT DEFAULT '',
+        lot_size INT DEFAULT 0,
+        min_investment INT DEFAULT 0,
         sector TEXT DEFAULT '',
-        quarter TEXT DEFAULT '',
-        fiscal_year INT DEFAULT 0,
+        status TEXT DEFAULT 'upcoming',
         description TEXT DEFAULT '',
         source TEXT DEFAULT 'system',
         created_at TIMESTAMPTZ DEFAULT NOW()
       );
-      CREATE INDEX IF NOT EXISTS idx_earnings_calendar_date ON public.earnings_calendar (event_date DESC);
-      CREATE INDEX IF NOT EXISTS idx_earnings_calendar_symbol ON public.earnings_calendar (symbol);
-      ALTER TABLE public.earnings_calendar ENABLE ROW LEVEL SECURITY;
+      CREATE INDEX IF NOT EXISTS idx_upcoming_ipos_date ON public.upcoming_ipos (ipo_date DESC);
+      CREATE INDEX IF NOT EXISTS idx_upcoming_ipos_symbol ON public.upcoming_ipos (symbol);
+      CREATE INDEX IF NOT EXISTS idx_upcoming_ipos_status ON public.upcoming_ipos (status);
+      ALTER TABLE public.upcoming_ipos ENABLE ROW LEVEL SECURITY;
     `);
     if (supabaseAdmin) {
       const BATCH = 50;
-      for (let i = 0; i < events.length; i += BATCH) {
-        await supabaseAdmin.from('earnings_calendar').upsert(
-          events.slice(i, i + BATCH).map(({ id, ...rest }) => rest),
-          { onConflict: 'symbol,event_date,quarter,fiscal_year', ignoreDuplicates: true }
+      for (let i = 0; i < ipos.length; i += BATCH) {
+        await supabaseAdmin.from('upcoming_ipos').upsert(
+          ipos.slice(i, i + BATCH).map(({ id, ...rest }) => rest),
+          { onConflict: 'symbol,ipo_date', ignoreDuplicates: true }
         );
       }
     }
   } catch (e) {
-    console.error('Failed to persist earnings calendar:', e);
+    console.error('Failed to persist IPOs:', e);
   }
 }
 
@@ -169,12 +158,12 @@ export async function GET(request: NextRequest) {
   const { searchParams } = request.nextUrl;
   const forceRefresh = searchParams.get('refresh') === 'true';
 
-  const events = generateEvents();
+  const ipos = generateIpos();
 
   /* Try to persist to DB (fire-and-forget) */
   if (!forceRefresh) {
-    tryPersist(events);
+    tryPersist(ipos);
   }
 
-  return NextResponse.json({ events, source: 'generated', count: events.length });
+  return NextResponse.json({ ipos, source: 'generated', count: ipos.length });
 }
