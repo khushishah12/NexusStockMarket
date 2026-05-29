@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useSidebar } from '../../hooks/useSidebar';
 import Sidebar from '../sidebar/Sidebar';
 import { createClient } from '../../lib/supabase/client';
+import ChatbotWidget from './ChatbotWidget';
 
 export default function DashboardLayoutClient({
   children,
@@ -70,6 +71,7 @@ export default function DashboardLayoutClient({
           {children}
         </div>
       </main>
+      <ChatbotWidget />
     </div>
   );
 }
