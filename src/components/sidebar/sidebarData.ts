@@ -7,6 +7,7 @@ import {
   Star,
   ShieldAlert,
   Database,
+  CalendarDays,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -56,6 +57,14 @@ export const SIDEBAR_NAV_ITEMS: SidebarNavItem[] = [
     icon: BarChart3,
     accent: 'neutral',
     description: 'Candlesticks & indicators',
+  },
+  {
+    id: 'calendar',
+    label: 'Calendar',
+    href: '/dashboard/calendar',
+    icon: CalendarDays,
+    accent: 'neutral',
+    description: 'Earnings & corporate events',
   },
   {
     id: 'news',
