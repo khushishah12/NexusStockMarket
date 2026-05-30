@@ -8,6 +8,7 @@ import {
   ShieldAlert,
   Database,
   CalendarDays,
+  Briefcase,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -73,6 +74,14 @@ export const SIDEBAR_NAV_ITEMS: SidebarNavItem[] = [
     icon: Newspaper,
     accent: 'neutral',
     description: 'Feeds & AI sentiment',
+  },
+  {
+    id: 'portfolio',
+    label: 'Portfolio',
+    href: '/dashboard/portfolio',
+    icon: Briefcase,
+    accent: 'bullish',
+    description: 'Track your holdings & P/L',
   },
   {
     id: 'watchlist',
