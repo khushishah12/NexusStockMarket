@@ -9,6 +9,8 @@ import {
   Database,
   CalendarDays,
   Briefcase,
+  Sparkles,
+  Target,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -58,6 +60,22 @@ export const SIDEBAR_NAV_ITEMS: SidebarNavItem[] = [
     icon: BarChart3,
     accent: 'neutral',
     description: 'Candlesticks & indicators',
+  },
+  {
+    id: 'predict-signal',
+    label: 'Predict Signal',
+    href: '/dashboard/predict-signal',
+    icon: Sparkles,
+    accent: 'bullish',
+    description: 'AI stock signal prediction',
+  },
+  {
+    id: 'stock-picker',
+    label: 'Stock Picker',
+    href: '/dashboard/stock-picker',
+    icon: Target,
+    accent: 'bullish',
+    description: 'AI-powered stock recommendations',
   },
   {
     id: 'calendar',
