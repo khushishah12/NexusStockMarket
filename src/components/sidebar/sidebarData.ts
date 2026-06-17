@@ -11,6 +11,7 @@ import {
   Briefcase,
   Sparkles,
   Target,
+  TrendingUp,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -76,6 +77,14 @@ export const SIDEBAR_NAV_ITEMS: SidebarNavItem[] = [
     icon: Target,
     accent: 'bullish',
     description: 'AI-powered stock recommendations',
+  },
+  {
+    id: 'future-returns',
+    label: 'Future Returns',
+    href: '/dashboard/future-returns',
+    icon: TrendingUp,
+    accent: 'bullish',
+    description: 'ML predicted stock returns',
   },
   {
     id: 'calendar',
