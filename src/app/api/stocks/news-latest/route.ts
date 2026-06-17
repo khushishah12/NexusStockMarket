@@ -5,36 +5,14 @@ export const maxDuration = 20;
 
 const PER_PAGE = 10;
 
-/* ── GDELT ── */
+/* ── NewsAPI (primary) ── */
 
-async function fetchGdelt(query: string): Promise<any[]> {
-  try {
-    const url = `https://api.gdeltproject.org/api/v2/doc/doc?query=${encodeURIComponent(query)}&mode=ArtList&format=json&maxrecords=20&sort=datedesc`;
-    const res = await fetch(url, { signal: AbortSignal.timeout(8000) });
-    if (!res.ok) return [];
-    const data = await res.json();
-    const raw = data?.articles || data?.results || data?.response?.docs || [];
-    if (!Array.isArray(raw)) return [];
-    return raw.map((a: any) => ({
-      title: a.title || a.Title || a.headline || '',
-      description: a.selectionheadline || a.summary || a.selectionbody || a.snippet || '',
-      source: a.domain || a.Domain || a.sourcecountry || 'GDELT',
-      url: a.url || a.Url || '',
-      publishedAt: a.seculardate || a.date || a.Date || '',
-    })).filter((a: any) => a.title);
-  } catch {
-    return [];
-  }
-}
-
-/* ── NewsAPI ── */
-
-async function fetchNewsApi(query: string): Promise<any[]> {
+async function fetchNewsApi(query: string, pageSize = 15): Promise<any[]> {
   const key = process.env.NEWSAPI_KEY;
   if (!key) return [];
   try {
-    const url = `https://newsapi.org/v2/everything?q=${encodeURIComponent(query)}&language=en&sortBy=publishedAt&pageSize=10&apiKey=${key}`;
-    const res = await fetch(url, { signal: AbortSignal.timeout(6000) });
+    const url = `https://newsapi.org/v2/everything?q=${encodeURIComponent(query)}&language=en&sortBy=publishedAt&pageSize=${pageSize}&apiKey=${key}`;
+    const res = await fetch(url, { signal: AbortSignal.timeout(8000) });
     if (!res.ok) return [];
     const data = await res.json();
     return (data?.articles || []).map((a: any) => ({
@@ -49,13 +27,35 @@ async function fetchNewsApi(query: string): Promise<any[]> {
   }
 }
 
+/* ── GDELT (fallback) ── */
+
+async function fetchGdelt(query: string): Promise<any[]> {
+  try {
+    const url = `https://api.gdeltproject.org/api/v2/doc/doc?query=${encodeURIComponent(query)}&mode=ArtList&format=json&maxrecords=10&sort=datedesc&sourcecountry:IN&lang:English`;
+    const res = await fetch(url, { signal: AbortSignal.timeout(8000) });
+    if (!res.ok) return [];
+    const data = await res.json();
+    const raw = data?.articles || data?.results || [];
+    if (!Array.isArray(raw)) return [];
+    return raw
+      .filter((a: any) => a.language === 'English')
+      .map((a: any) => ({
+        title: a.title || '',
+        description: a.selectionheadline || a.body || '',
+        source: a.domain || 'GDELT',
+        url: a.url || '',
+        publishedAt: a.seendate ? `${a.seendate.slice(0, 4)}-${a.seendate.slice(4, 6)}-${a.seendate.slice(6, 8)}` : '',
+      }))
+      .filter((a: any) => a.title);
+  } catch {
+    return [];
+  }
+}
+
 /* ── RSS ── */
 
 const RSS_FEEDS: { url: string; name: string }[] = [
-  { url: 'https://economictimes.indiatimes.com/rssfeeds/1975241501.cms', name: 'Economic Times' },
   { url: 'https://www.livemint.com/rss/money', name: 'Livemint' },
-  { url: 'https://www.moneycontrol.com/rss/market.xml', name: 'Moneycontrol' },
-  { url: 'https://www.business-standard.com/rss/markets-101.rss', name: 'Business Standard' },
   { url: 'https://www.thehindubusinessline.com/opinion/columns/?service=rss', name: 'Hindu Business Line' },
 ];
 
@@ -64,21 +64,22 @@ async function fetchAllRss(): Promise<any[]> {
     const results: any[] = [];
     for (const feed of RSS_FEEDS) {
       try {
-        const res = await fetch(feed.url, { signal: AbortSignal.timeout(6000) });
+        const res = await fetch(feed.url, { signal: AbortSignal.timeout(8000) });
         const xml = await res.text();
         const items = xml.match(/<item>[\s\S]*?<\/item>/g) || [];
         for (const item of items) {
-          const title = (item.match(/<title>(?:<!\[CDATA\[(.*?)\]\]>|(.*?))<\/title>/)?.[1] || item.match(/<title>(?:<!\[CDATA\[(.*?)\]\]>|(.*?))<\/title>/)?.[2] || '').trim();
+          const titleMatch = item.match(/<title>(?:<!\[CDATA\[(.*?)\]\]>|(.*?))<\/title>/);
+          const title = (titleMatch?.[1] || titleMatch?.[2] || '').trim();
           if (!title) continue;
           const descRaw = item.match(/<description>(?:<!\[CDATA\[(.*?)\]\]>|(.*?))<\/description>/)?.[1] || item.match(/<description>(?:<!\[CDATA\[(.*?)\]\]>|(.*?))<\/description>/)?.[2] || '';
-          const link = (item.match(/<link>(?:<!\[CDATA\[(.*?)\]\]>|(.*?))<\/link>/)?.[1] || item.match(/<link>(?:<!\[CDATA\[(.*?)\]\]>|(.*?))<\/link>/)?.[2] || '').trim();
-          const dateRaw = item.match(/<pubDate>(.*?)<\/pubDate>/)?.[1] || '';
+          const link = item.match(/<link>(?:<!\[CDATA\[(.*?)\]\]>|(.*?))<\/link>/)?.[1] || item.match(/<link>(?:<!\[CDATA\[(.*?)\]\]>|(.*?))<\/link>/)?.[2] || '';
+          const pubDate = item.match(/<pubDate>(?:<!\[CDATA\[(.*?)\]\]>|(.*?))<\/pubDate>/)?.[1] || item.match(/<pubDate>(?:<!\[CDATA\[(.*?)\]\]>|(.*?))<\/pubDate>/)?.[2] || '';
           results.push({
             title,
             description: descRaw.replace(/<[^>]+>/g, '').slice(0, 300),
             source: feed.name,
-            url: link,
-            publishedAt: dateRaw ? new Date(dateRaw).toISOString().split('T')[0] : '',
+            url: link.trim(),
+            publishedAt: pubDate ? new Date(pubDate).toISOString().split('T')[0] : '',
           });
         }
       } catch {}
@@ -89,7 +90,7 @@ async function fetchAllRss(): Promise<any[]> {
   }
 }
 
-/* ── Merge & Dedupe ── */
+/* ── Merge ── */
 
 function mergeDedupe(articles: any[][]): any[] {
   const seen = new Set<string>();
@@ -114,15 +115,16 @@ export async function GET(request: NextRequest) {
     const pageStr = request.nextUrl.searchParams.get('page') || '1';
     const page = Math.max(1, parseInt(pageStr, 10) || 1);
 
-    const broadQuery = '("Indian stock market" OR "BSE" OR "NSE" OR "Sensex" OR "Nifty" OR "India stocks" OR "Indian equities") sourcecountry:India';
+    const newsApiQuery = 'Indian stock market OR NSE OR BSE OR Sensex OR Nifty OR "India stocks" OR "Indian equities" OR (India AND IPO) OR (India AND markets)';
+    const gdeltQuery = '(stock market OR BSE OR NSE OR Sensex OR Nifty OR IPO OR SEBI) (India OR Indian)';
 
-    const [gdelt, newsapi, rss] = await Promise.all([
-      fetchGdelt(broadQuery),
-      fetchNewsApi('Indian stock market OR NSE OR BSE OR Sensex OR Nifty'),
+    const [newsapi, gdelt, rss] = await Promise.all([
+      fetchNewsApi(newsApiQuery, 15),
+      fetchGdelt(gdeltQuery),
       fetchAllRss(),
     ]);
 
-    const all = mergeDedupe([gdelt, newsapi, rss]);
+    const all = mergeDedupe([newsapi, gdelt, rss]);
     const total = all.length;
     const start = (page - 1) * PER_PAGE;
     const pageArticles = all.slice(start, start + PER_PAGE);
