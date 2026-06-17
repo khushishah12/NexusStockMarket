@@ -32,6 +32,7 @@ export default function ChatbotWidget() {
   ]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
+  const [streamingId, setStreamingId] = useState<number | null>(null);
 
   const listRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -40,24 +41,93 @@ export default function ChatbotWidget() {
     const trimmed = text.trim();
     if (!trimmed) return;
 
-    setMsgs(prev => [...prev, { role: 'user', text: trimmed, ts: Date.now() }]);
+    const userMsg: ChatMsg = { role: 'user', text: trimmed, ts: Date.now() };
+    const botMsg: ChatMsg = { role: 'bot', text: '', ts: Date.now() };
+
+    setMsgs(prev => [...prev, userMsg, botMsg]);
     setInput('');
     setLoading(true);
+    setStreamingId(msgs.length + 1);
+
+    const history = [...msgs.slice(-10), userMsg].map(m => ({
+      role: m.role,
+      content: m.text,
+    }));
 
     try {
       const res = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: trimmed }),
+        body: JSON.stringify({ message: trimmed, history }),
       });
-      const data = await res.json();
-      setMsgs(prev => [...prev, { role: 'bot', text: data.text, ts: Date.now() }]);
+
+      const ct = res.headers.get('Content-Type') || '';
+
+      if (ct.includes('text/event-stream')) {
+        const reader = res.body!.getReader();
+        const decoder = new TextDecoder();
+        let reply = '';
+        let firstToken = true;
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          const chunk = decoder.decode(value, { stream: true });
+          const lines = chunk.split('\n');
+
+          for (const line of lines) {
+            if (line.startsWith('data: ')) {
+              const data = line.slice(6).trim();
+              if (data === '[DONE]') continue;
+              try {
+                const parsed = JSON.parse(data);
+                if (parsed.token) {
+                  reply += parsed.token;
+                  if (firstToken) {
+                    setLoading(false);
+                    firstToken = false;
+                  }
+                  const idx = msgs.length + 1;
+                  setStreamingId(idx);
+                  setMsgs(prev => {
+                    const updated = [...prev];
+                    if (updated.length > 0) {
+                      updated[updated.length - 1] = { role: 'bot', text: reply, ts: Date.now() };
+                    }
+                    return updated;
+                  });
+                }
+              } catch {}
+            }
+          }
+        }
+
+        if (firstToken) setLoading(false);
+      } else {
+        const data = await res.json();
+        setMsgs(prev => {
+          const updated = [...prev];
+          if (updated.length > 0) {
+            updated[updated.length - 1] = { role: 'bot', text: data.text || 'No response', ts: Date.now() };
+          }
+          return updated;
+        });
+        setLoading(false);
+      }
     } catch {
-      setMsgs(prev => [...prev, { role: 'bot', text: 'Sorry, I couldn\'t reach the server. Please try again.', ts: Date.now() }]);
+      setMsgs(prev => {
+        const updated = [...prev];
+        if (updated.length > 0) {
+          updated[updated.length - 1] = { role: 'bot', text: 'Sorry, I couldn\'t reach the server. Please try again.', ts: Date.now() };
+        }
+        return updated;
+      });
+      setLoading(false);
     }
 
-    setLoading(false);
-  }, []);
+    setStreamingId(null);
+  }, [msgs]);
 
   useEffect(() => {
     if (listRef.current) {
@@ -129,27 +199,18 @@ export default function ChatbotWidget() {
                         : 'bg-white/[0.06] text-slate-200'
                     }`}
                   >
-                    <RenderText text={m.text} />
+                    {m.role === 'bot' && streamingId === i && m.text === '' ? (
+                      <span className="flex gap-0.5 py-1">
+                        <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-slate-400 [animation-delay:0ms]" />
+                        <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-slate-400 [animation-delay:150ms]" />
+                        <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-slate-400 [animation-delay:300ms]" />
+                      </span>
+                    ) : (
+                      <RenderText text={m.text} />
+                    )}
                   </div>
                 </motion.div>
               ))}
-
-              {/* ── Loading ── */}
-              {loading && (
-                <motion.div
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="flex justify-start"
-                >
-                  <div className="flex items-center gap-2 rounded-2xl bg-white/[0.06] px-4 py-3">
-                    <span className="flex gap-0.5">
-                      <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-slate-400 [animation-delay:0ms]" />
-                      <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-slate-400 [animation-delay:150ms]" />
-                      <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-slate-400 [animation-delay:300ms]" />
-                    </span>
-                  </div>
-                </motion.div>
-              )}
 
               {/* ── Quick suggestions (first message only) ── */}
               {msgs.length === 1 && !loading && (
@@ -186,7 +247,7 @@ export default function ChatbotWidget() {
                 <button
                   type="submit"
                   disabled={loading || !input.trim()}
-                  className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-cyan-500 to-blue-600 text-white transition hover:from-cyan-400 hover:to-blue-500 disabled:opacity-40 disabled:hover:from-cyan-500 disabled:hover:to-blue-600"
+                  className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-cyan-500 to-blue-600 text-white transition hover:from-cyan-400 hover:to-blue-500 disabled:opacity-40 disabled:hover:from-cyan-500 disabled:hover:to-blue-500"
                 >
                   <Send className="h-3.5 w-3.5" />
                 </button>
