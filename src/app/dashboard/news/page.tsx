@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { Search, Newspaper, ExternalLink, Clock, Building2, Loader2, TrendingUp, TrendingDown, Minus, ArrowLeft, RefreshCw } from 'lucide-react';
+import { Search, Newspaper, ExternalLink, Clock, Building2, Loader2, TrendingUp, TrendingDown, Minus, ArrowLeft, RefreshCw, X } from 'lucide-react';
 import PageTransition from '../../../components/dashboard/PageTransition';
 import PageHeader from '../../../components/dashboard/PageHeader';
 
@@ -73,6 +73,10 @@ export default function NewsPage() {
   const [hasMore, setHasMore] = useState(false);
   const [newsLoading, setNewsLoading] = useState(true);
   const [stockMode, setStockMode] = useState(false);
+  const [detailArticle, setDetailArticle] = useState<Article | null>(null);
+  const [detailContent, setDetailContent] = useState('');
+  const [detailLoading, setDetailLoading] = useState(false);
+  const [detailError, setDetailError] = useState('');
 
   const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -163,6 +167,30 @@ export default function NewsPage() {
   const loadMore = useCallback(() => {
     loadLatest(page + 1, true);
   }, [page]);
+
+  /* ── Open article detail ── */
+  const openArticle = useCallback(async (article: Article) => {
+    setDetailArticle(article);
+    setDetailContent('');
+    setDetailError('');
+    setDetailLoading(true);
+    try {
+      const res = await fetch('/api/stocks/news-content', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url: article.url }),
+      });
+      const data = await res.json();
+      if (data.error) {
+        setDetailError(data.error);
+      } else {
+        setDetailContent(data.content || '');
+      }
+    } catch {
+      setDetailError('Failed to load article content');
+    }
+    setDetailLoading(false);
+  }, []);
 
   return (
     <PageTransition>
@@ -256,12 +284,10 @@ export default function NewsPage() {
               const st = SENTIMENT_STYLE[sentiment];
               const SentIcon = st.icon;
               return (
-                <a
+                <div
                   key={`${a.url || i}`}
-                  href={a.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className={`group flex flex-col rounded-xl border ${st.border} bg-white/[0.02] p-5 transition hover:bg-white/[0.05]`}
+                  onClick={() => openArticle(a)}
+                  className={`group flex cursor-pointer flex-col rounded-xl border ${st.border} bg-white/[0.02] p-5 transition hover:bg-white/[0.05]`}
                 >
                   <div className="mb-3 flex items-center justify-between">
                     <span className="rounded bg-white/[0.06] px-2 py-1 text-[10px] font-medium text-slate-400">{a.source}</span>
@@ -285,7 +311,7 @@ export default function NewsPage() {
                       Read <ExternalLink className="h-3 w-3" />
                     </span>
                   </div>
-                </a>
+                </div>
               );
             })}
           </div>
@@ -324,6 +350,71 @@ export default function NewsPage() {
           )}
         </div>
       ) : null}
+
+      {/* ═══════ ARTICLE DETAIL MODAL ═══════ */}
+      {detailArticle && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4" onClick={() => setDetailArticle(null)}>
+          <div className="relative flex max-h-[85vh] w-full max-w-3xl flex-col rounded-2xl border border-white/[0.08] bg-[#0a0f1a] shadow-2xl" onClick={e => e.stopPropagation()}>
+            {/* Header */}
+            <div className="shrink-0 border-b border-white/[0.06] px-6 py-4">
+              <div className="flex items-start justify-between gap-4">
+                <div className="min-w-0 flex-1">
+                  <h2 className="text-base font-bold text-white leading-snug line-clamp-2">{detailArticle.title}</h2>
+                  <div className="mt-2 flex items-center gap-3 text-[11px] text-slate-500">
+                    <span>{detailArticle.source}</span>
+                    <span>·</span>
+                    <span className="flex items-center gap-1"><Clock className="h-3 w-3" />{timeAgo(detailArticle.publishedAt)}</span>
+                    <span>·</span>
+                    <a href={detailArticle.url} target="_blank" rel="noopener noreferrer"
+                      className="flex items-center gap-1 text-cyan-400 hover:underline">
+                      Open original <ExternalLink className="h-3 w-3" />
+                    </a>
+                  </div>
+                </div>
+                <button onClick={() => setDetailArticle(null)}
+                  className="shrink-0 rounded-full p-1.5 text-slate-500 hover:bg-white/[0.06] hover:text-white">
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+            </div>
+            {/* Content */}
+            <div className="overflow-y-auto px-6 py-5">
+              {detailLoading ? (
+                <div className="flex items-center justify-center py-20">
+                  <div className="flex flex-col items-center gap-3">
+                    <Loader2 className="h-6 w-6 animate-spin text-cyan-400" />
+                    <p className="text-sm text-slate-500">Loading article...</p>
+                  </div>
+                </div>
+              ) : detailError ? (
+                <div className="flex flex-col items-center gap-4 py-16 text-center">
+                  <p className="text-sm text-rose-400">{detailError}</p>
+                  <a href={detailArticle.url} target="_blank" rel="noopener noreferrer"
+                    className="flex items-center gap-2 rounded-xl border border-white/[0.08] bg-white/[0.04] px-5 py-2.5 text-xs text-slate-300 hover:bg-white/[0.08]">
+                    <ExternalLink className="h-3.5 w-3.5" />
+                    Open in original source
+                  </a>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {detailContent.split('\n\n').map((para, i) => (
+                    <p key={i} className="text-sm leading-relaxed text-slate-300">{para}</p>
+                  ))}
+                </div>
+              )}
+            </div>
+            {/* Footer */}
+            <div className="shrink-0 border-t border-white/[0.06] px-6 py-3 flex items-center justify-between">
+              <p className="text-[10px] text-slate-600">Source: {detailArticle.source}</p>
+              <a href={detailArticle.url} target="_blank" rel="noopener noreferrer"
+                className="flex items-center gap-1.5 text-xs text-cyan-400 hover:underline">
+                <ExternalLink className="h-3 w-3" />
+                View original
+              </a>
+            </div>
+          </div>
+        </div>
+      )}
     </PageTransition>
   );
 }
