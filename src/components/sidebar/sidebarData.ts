@@ -12,6 +12,7 @@ import {
   Sparkles,
   Target,
   TrendingUp,
+  Activity,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -85,6 +86,14 @@ export const SIDEBAR_NAV_ITEMS: SidebarNavItem[] = [
     icon: TrendingUp,
     accent: 'bullish',
     description: 'ML predicted stock returns',
+  },
+  {
+    id: 'market-regime',
+    label: 'Market Regime',
+    href: '/dashboard/market-regime',
+    icon: Activity,
+    accent: 'neutral',
+    description: 'AI market regime predictions',
   },
   {
     id: 'calendar',
