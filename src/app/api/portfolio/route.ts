@@ -14,6 +14,9 @@ CREATE TABLE IF NOT EXISTS public.portfolio_holdings (
   buy_price NUMERIC(18,4) NOT NULL DEFAULT 0,
   buy_date DATE NOT NULL,
   notes TEXT DEFAULT '',
+  status TEXT DEFAULT 'open',
+  sell_price NUMERIC(18,4),
+  sell_date DATE,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
@@ -81,17 +84,36 @@ export async function GET() {
 
     const enriched = (holdings || []).map(h => {
       const symbol = h.stock_symbol.toUpperCase();
-      const currentPrice = prices[symbol] || 0;
       const invested = Number(h.quantity) * Number(h.buy_price);
-      const currentValue = Number(h.quantity) * currentPrice;
-      const pl = currentValue - invested;
-      const plPct = invested > 0 ? (pl / invested) * 100 : 0;
+      const status = h.status || 'open';
+
+      let currentPrice = 0;
+      let currentValue = 0;
+      let pl = 0;
+      let plPct = 0;
+
+      if (status === 'sold') {
+        const sellPrice = Number(h.sell_price) || 0;
+        currentPrice = sellPrice;
+        currentValue = Number(h.quantity) * sellPrice;
+        pl = currentValue - invested;
+        plPct = invested > 0 ? (pl / invested) * 100 : 0;
+      } else {
+        currentPrice = prices[symbol] || 0;
+        currentValue = Number(h.quantity) * currentPrice;
+        pl = currentValue - invested;
+        plPct = invested > 0 ? (pl / invested) * 100 : 0;
+      }
+
       return {
         id: h.id,
         stock_symbol: symbol,
         quantity: Number(h.quantity),
         buy_price: Number(h.buy_price),
         buy_date: h.buy_date,
+        sell_price: h.sell_price ? Number(h.sell_price) : null,
+        sell_date: h.sell_date || null,
+        status,
         notes: h.notes || '',
         current_price: currentPrice,
         invested_amount: invested,
