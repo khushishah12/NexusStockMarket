@@ -119,6 +119,7 @@ export default function StockSearchInput({
           onKeyDown={handleKeyDown}
           placeholder={placeholder}
           className="w-full rounded-xl border border-white/[0.08] bg-black/40 pl-9 pr-10 py-2.5 text-sm text-white placeholder-slate-600 outline-none transition focus:border-cyan-500/30"
+          suppressHydrationWarning
         />
         {loading && (
           <Loader2 className="absolute right-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 animate-spin text-slate-500" />

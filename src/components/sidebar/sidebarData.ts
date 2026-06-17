@@ -1,11 +1,9 @@
 import {
   LayoutDashboard,
   LineChart,
-  Brain,
   BarChart3,
   Newspaper,
   Star,
-  ShieldAlert,
   Database,
   CalendarDays,
   Briefcase,
@@ -13,6 +11,7 @@ import {
   Target,
   TrendingUp,
   Activity,
+  Calculator,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -46,14 +45,6 @@ export const SIDEBAR_NAV_ITEMS: SidebarNavItem[] = [
     icon: LineChart,
     accent: 'bullish',
     description: 'NSE / BSE stocks & filters',
-  },
-  {
-    id: 'predictions',
-    label: 'AI Predictions',
-    href: '/dashboard/predictions',
-    icon: Brain,
-    accent: 'bullish',
-    description: 'Buy/sell probability & trends',
   },
   {
     id: 'charts',
@@ -96,6 +87,14 @@ export const SIDEBAR_NAV_ITEMS: SidebarNavItem[] = [
     description: 'AI market regime predictions',
   },
   {
+    id: 'what-if',
+    label: 'What-If',
+    href: '/dashboard/what-if',
+    icon: Calculator,
+    accent: 'neutral',
+    description: 'Investment return calculator',
+  },
+  {
     id: 'calendar',
     label: 'Calendar',
     href: '/dashboard/calendar',
@@ -126,14 +125,6 @@ export const SIDEBAR_NAV_ITEMS: SidebarNavItem[] = [
     icon: Star,
     accent: 'bullish',
     description: 'Saved stocks & quick access',
-  },
-  {
-    id: 'risk',
-    label: 'Risk Analysis',
-    href: '/dashboard/risk',
-    icon: ShieldAlert,
-    accent: 'bearish',
-    description: 'Portfolio risk & volatility',
   },
   {
     id: 'add-script',

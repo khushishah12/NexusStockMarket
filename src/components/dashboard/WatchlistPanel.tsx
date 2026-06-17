@@ -326,6 +326,7 @@ export default function WatchlistPanel() {
             onChange={e => { setSearch(e.target.value); setPage(1); }}
             placeholder="Filter by symbol, notes..."
             className="w-full rounded-xl border border-white/[0.08] bg-black/40 py-2.5 pl-10 pr-4 text-sm text-white placeholder-slate-500 outline-none transition focus:border-emerald-500/30"
+            suppressHydrationWarning
           />
         </div>
         <button
