@@ -7,6 +7,7 @@ import {
   PieChart, ArrowUpRight, ArrowDownRight,
 } from 'lucide-react';
 import PageTransition from '../../../components/dashboard/PageTransition';
+import StockSearchInput from '../../../components/dashboard/StockSearchInput';
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                              */
@@ -107,12 +108,11 @@ function Modal({ open, onClose, onSubmit, formData, setFormData, editing, loadin
         <div className="flex flex-col gap-4">
           <div>
             <label className="mb-1.5 block text-xs font-medium text-slate-400">Stock Symbol *</label>
-            <input
-              type="text"
+            <StockSearchInput
               value={formData.stock_symbol}
-              onChange={e => setFormData({ ...formData, stock_symbol: e.target.value.toUpperCase() })}
-              placeholder="e.g. RELIANCE, TCS"
-              className="w-full rounded-xl border border-white/[0.08] bg-black/40 px-4 py-2.5 text-sm text-white placeholder-slate-600 outline-none transition focus:border-cyan-500/30"
+              onChange={val => setFormData({ ...formData, stock_symbol: val })}
+              onSelect={val => setFormData({ ...formData, stock_symbol: val })}
+              placeholder="Start typing a stock name..."
             />
           </div>
 
