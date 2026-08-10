@@ -1,197 +1,461 @@
-📈 GlobalVestHub
+# 📈 GlobalVestHub
 
-An AI-powered, 3D-visualized stock market dashboard built with modern web technologies. GlobalVestHub combines live market data, machine-learning driven predictions, and an AI chat assistant in a single investing workspace — helping you track, analyze, and forecast the market in one place.
+**GlobalVestHub** is an AI-powered, 3D-visualized stock market dashboard built with modern web technologies. It combines live market data, machine-learning-driven predictions, portfolio management, and an AI chat assistant into a unified investing workspace.
 
-📋 Table of Contents
-Features
-Tech Stack
-Prerequisites
-Installation
-Configuration
-Getting Started
-Project Structure
-Available Scripts
-Machine Learning Models
-API Routes
-Contributing
-License
-✨ Features
-Core Functionality
-🌐 3D Market Visualization: Explore markets through interactive 3D charts and scenes
-🤖 AI Chat Assistant: Ask questions about markets, stocks, and your portfolio through a knowledge-backed chat
-📊 Portfolio Tracking: Manage and monitor your holdings in real time
-⭐ Watchlist: Save and track your favorite tickers
-📰 News Feed: Aggregated market news, all in one place
-📅 Market Calendar: Stay on top of earnings and market events
-🔀 What-If Scenarios: Simulate hypothetical trades and allocations
-AI & Prediction Features
-🔮 Future Returns Forecasting: Regression-based return prediction
-🚦 Buy/Sell/Hold Signals: ML-powered signal classification
-🌦️ Market Regime Detection: Identify bull/bear/volatile market conditions
-🧠 AI Stock Picker: Get data-driven stock recommendations
-Data & Indicators
-📡 Live Market Data: Real-time quotes via Yahoo Finance
-📉 Technical Indicators: Sector charts and indicator breakdowns
-🔐 Secure Auth: Email/password sign up & login via Supabase
-🛠️ Tech Stack
+> **Track. Analyze. Predict. Invest.**
 
-Frontend
+---
 
-Framework: Next.js (App Router) — React 19 + TypeScript
-Styling: TailwindCSS 4
-3D Graphics: React Three Fiber + Three.js
-Charts: Chart.js
-Animation: Framer Motion
-State Management: Zustand
+## 📋 Table of Contents
 
-Backend
+* [✨ Features](#-features)
+* [🛠️ Tech Stack](#️-tech-stack)
+* [📦 Prerequisites](#-prerequisites)
+* [🚀 Installation](#-installation)
+* [⚙️ Configuration](#️-configuration)
+* [🎯 Getting Started](#-getting-started)
+* [📁 Project Structure](#-project-structure)
+* [📝 Available Scripts](#-available-scripts)
+* [🧠 Machine Learning Models](#-machine-learning-models)
+* [🔌 API Routes](#-api-routes)
+* [🚀 Deployment](#-deployment)
+* [🤝 Contributing](#-contributing)
+* [📄 License](#-license)
+* [👥 Author](#-author)
 
-Database & Auth: Supabase (PostgreSQL)
-Market Data: yahoo-finance2
-API Layer: Next.js API routes
+---
 
-Machine Learning
+## ✨ Features
 
-Language: Python
-Libraries: scikit-learn based models (regression, classification)
-Artifacts: Trained .pkl models for returns, signals, and regime detection
-📦 Prerequisites
-Node.js 18+
-npm, yarn, pnpm, or bun
-A Supabase account (for database and authentication)
-(Optional) Python 3.9+ with scikit-learn and pandas, for retraining ML models
-🚀 Installation
-Clone the repository
-bash
-   git clone https://github.com/khushishah12/GlobalVestHub.git
-   cd GlobalVestHub
-Install dependencies
-bash
-   npm install
-Set up environment variables (see Configuration section below)
-⚙️ Configuration
+### 📊 Core Functionality
 
-Create a .env.local file in the root directory with the following variables:
+| Feature                        | Description                                                                            |
+| ------------------------------ | -------------------------------------------------------------------------------------- |
+| 🌐 **3D Market Visualization** | Explore market data through interactive 3D charts and scenes                           |
+| 🤖 **AI Chat Assistant**       | Ask questions about stocks, markets, and portfolios using a knowledge-backed assistant |
+| 📊 **Portfolio Tracking**      | Manage and monitor your holdings in real time                                          |
+| ⭐ **Watchlist**                | Save and track favorite stocks and tickers                                             |
+| 📰 **News Feed**               | Access aggregated financial and market news                                            |
+| 📅 **Market Calendar**         | Track earnings, events, and important market dates                                     |
+| 🔀 **What-If Scenarios**       | Simulate hypothetical trades and portfolio allocations                                 |
 
-env
+### 🧠 AI & Prediction
+
+| Feature                           | Description                                            |
+| --------------------------------- | ------------------------------------------------------ |
+| 🔮 **Future Returns Forecasting** | Regression-based prediction of expected stock returns  |
+| 🚦 **Buy / Sell / Hold Signals**  | ML-powered classification of potential trading signals |
+| 🌦️ **Market Regime Detection**   | Identify bull, bear, and volatile market conditions    |
+| 🧠 **AI Stock Picker**            | Generate data-driven stock recommendations             |
+
+### 📈 Market Data & Analytics
+
+* 📡 **Live Market Data** using Yahoo Finance
+* 📉 **Technical Indicators** and market analytics
+* 📊 **Sector Performance Charts**
+* 🔐 **Secure Authentication** using Supabase
+* 💼 **Portfolio & Watchlist Management**
+
+---
+
+## 🛠️ Tech Stack
+
+### Frontend
+
+| Technology            | Usage                                           |
+| --------------------- | ----------------------------------------------- |
+| **Next.js**           | Full-stack React framework using the App Router |
+| **React 19**          | UI development                                  |
+| **TypeScript**        | Type-safe development                           |
+| **Tailwind CSS 4**    | Styling                                         |
+| **React Three Fiber** | 3D graphics                                     |
+| **Three.js**          | 3D rendering                                    |
+| **Chart.js**          | Financial and analytical charts                 |
+| **Framer Motion**     | UI animations                                   |
+| **Zustand**           | State management                                |
+
+### Backend & Database
+
+| Technology             | Usage                                  |
+| ---------------------- | -------------------------------------- |
+| **Next.js API Routes** | Backend API layer                      |
+| **Supabase**           | PostgreSQL database and authentication |
+| **Yahoo Finance**      | Live market data via `yahoo-finance2`  |
+
+### Machine Learning
+
+| Technology          | Usage                         |
+| ------------------- | ----------------------------- |
+| **Python**          | ML model development          |
+| **scikit-learn**    | Regression and classification |
+| **Pandas**          | Data processing               |
+| **Pickle (`.pkl`)** | Trained model artifacts       |
+
+---
+
+## 📦 Prerequisites
+
+Before running GlobalVestHub locally, make sure you have:
+
+* **Node.js 18+**
+* **npm**, **yarn**, **pnpm**, or **bun**
+* A **Supabase account**
+* **Python 3.9+** *(optional — required only for retraining ML models)*
+* Python packages such as `scikit-learn` and `pandas` *(optional)*
+
+---
+
+## 🚀 Installation
+
+### 1. Clone the Repository
+
+```bash
+git clone https://github.com/khushishah12/GlobalVestHub.git
+cd GlobalVestHub
+```
+
+### 2. Install Dependencies
+
+```bash
+npm install
+```
+
+### 3. Configure Environment Variables
+
+Create a `.env.local` file in the project root.
+
+See the [Configuration](#️-configuration) section below.
+
+---
+
+## ⚙️ Configuration
+
+Create `.env.local`:
+
+```env
 # Supabase Configuration
 NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+```
 
-For a full step-by-step walkthrough — creating a Supabase project, copying API keys, running migrations, and configuring auth redirect URLs — see supabase/SETUP.md.
+### Supabase Setup
 
-🎯 Getting Started
-Development Server
+For the complete Supabase setup process, refer to:
 
-Run the development server:
+```text
+supabase/SETUP.md
+```
 
-bash
+The setup guide covers:
+
+* Creating a Supabase project
+* Obtaining API credentials
+* Running database migrations
+* Configuring authentication
+* Setting auth redirect URLs
+
+> ⚠️ **Never commit `.env.local` or expose your Supabase credentials publicly.**
+
+---
+
+## 🎯 Getting Started
+
+### Start the Development Server
+
+```bash
 npm run dev
+```
 
-Open http://localhost:3000 with your browser to see the application.
+Then open:
 
-Database Migrations
+```text
+http://localhost:3000
+```
 
-Before signing up/logging in, run the SQL migrations in supabase/migrations/ (in order) via the Supabase SQL Editor:
+### Database Migrations
 
-20260522000000_initial_schema.sql — profiles + auth trigger
-20260522100000_dashboard_schema.sql — watchlist table
-📁 Project Structure
+Before using authentication, watchlists, or other database-dependent features, run the SQL migrations in:
+
+```text
+supabase/migrations/
+```
+
+Run them in the Supabase SQL Editor **in the following order**:
+
+```text
+20260522000000_initial_schema.sql
+20260522100000_dashboard_schema.sql
+```
+
+The migrations create and configure:
+
+* User profiles
+* Authentication triggers
+* Watchlists
+* Dashboard-related database structures
+
+---
+
+## 📁 Project Structure
+
+```text
 GlobalVestHub/
-├── Models/                    # Python training/inference scripts & model artifacts
+│
+├── Models/
 │   ├── future_returns_predict.py
 │   ├── regime_predict.py
 │   ├── stock_picker.py
-│   └── *.pkl                  # Trained model files
+│   └── *.pkl
+│
 ├── scripts/
-│   └── train_regressor.py     # Model training script
+│   └── train_regressor.py
+│
 ├── src/
 │   ├── app/
-│   │   ├── api/                # API routes: chat, stocks, portfolio, watchlist,
-│   │   │                       #   news, indicators, market-regime, predict-signal, etc.
-│   │   ├── dashboard/           # Dashboard pages: portfolio, watchlist, news,
-│   │   │                       #   calendar, charts, stock-picker, what-if, etc.
-│   │   ├── login/ signup/       # Authentication pages
-│   │   └── page.tsx             # Landing page
-│   ├── components/              # React UI components
-│   ├── hooks/                   # Custom React hooks
-│   ├── lib/                     # Shared utilities / API clients
-│   ├── models/                  # ML model artifacts used by API routes
-│   └── store/                   # Zustand state stores
+│   │   ├── api/
+│   │   │   ├── chat/
+│   │   │   ├── stocks/
+│   │   │   ├── portfolio/
+│   │   │   ├── watchlist/
+│   │   │   ├── news/
+│   │   │   ├── indicators/
+│   │   │   ├── market-regime/
+│   │   │   ├── predict-signal/
+│   │   │   └── ...
+│   │   │
+│   │   ├── dashboard/
+│   │   │   ├── portfolio/
+│   │   │   ├── watchlist/
+│   │   │   ├── news/
+│   │   │   ├── calendar/
+│   │   │   ├── charts/
+│   │   │   ├── stock-picker/
+│   │   │   ├── what-if/
+│   │   │   └── ...
+│   │   │
+│   │   ├── login/
+│   │   ├── signup/
+│   │   └── page.tsx
+│   │
+│   ├── components/
+│   ├── hooks/
+│   ├── lib/
+│   ├── models/
+│   └── store/
+│
 ├── supabase/
-│   ├── migrations/              # SQL schema migrations
-│   └── SETUP.md                 # Supabase setup guide
-├── lib/supabaseClient.ts        # Supabase client
-└── middleware.ts                # Next.js middleware
-📝 Available Scripts
-Command	Description
-npm run dev	Start the development server
-npm run build	Build the app for production
-npm run start	Start the production server
-npm run lint	Run ESLint to check code quality
-🧠 Machine Learning Models
+│   ├── migrations/
+│   └── SETUP.md
+│
+├── lib/
+│   └── supabaseClient.ts
+│
+├── middleware.ts
+├── package.json
+└── README.md
+```
 
-The Models/ and src/models/ directories contain the trained models and scripts that power predictions across the app:
+---
 
-Model	Purpose
-stock_return_rf_model.pkl / stock_return_regressor.pkl	Predict expected stock returns
-stock_signal_classifier.pkl	Classify buy/sell/hold signals
-regime_rf_model.pkl	Detect current market regime
-stock_picker.py	AI-driven stock recommendation logic
+## 📝 Available Scripts
 
-Retraining scripts live in scripts/train_regressor.py and Models/*.py.
+| Command         | Description                          |
+| --------------- | ------------------------------------ |
+| `npm run dev`   | Start the development server         |
+| `npm run build` | Build the application for production |
+| `npm run start` | Start the production server          |
+| `npm run lint`  | Run ESLint and check code quality    |
 
-🔌 API Routes
+Example:
 
-The application includes several API endpoints under src/app/api/:
+```bash
+npm run dev
+```
 
-Chat: AI chat assistant backed by a knowledge base
-Stocks / Market Data: Live quotes and indicators
-Portfolio / Watchlist: Manage holdings and saved tickers
-News: Aggregated market news
-Predict-Signal / Future-Returns / Market-Regime / Stock-Picker: ML-powered prediction endpoints
-Sector-Chart: Sector-level performance charting
+---
 
-Refer to the src/app/api/ directory for detailed route implementations.
+## 🧠 Machine Learning Models
 
-🚀 Deployment
-Deploy on Vercel
+GlobalVestHub uses trained machine-learning models to provide market predictions and analysis.
 
-The easiest way to deploy is using Vercel:
+### Available Models
 
-Push your code to GitHub
-Connect your repository to Vercel
-Configure NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY in the Vercel dashboard
-Vercel automatically deploys on every push
+| Model                         | Purpose                                    |
+| ----------------------------- | ------------------------------------------ |
+| `stock_return_rf_model.pkl`   | Predict expected stock returns             |
+| `stock_return_regressor.pkl`  | Regression-based stock return prediction   |
+| `stock_signal_classifier.pkl` | Classify Buy / Sell / Hold signals         |
+| `regime_rf_model.pkl`         | Detect market regimes                      |
+| `stock_picker.py`             | Generate data-driven stock recommendations |
 
-If you use Vercel's Supabase integration, see Option B in supabase/SETUP.md for wiring up environment variables automatically.
+### Prediction Pipeline
 
-📞 Support & Resources
-Next.js Documentation
-Supabase Documentation
-React Three Fiber Documentation
-Chart.js Documentation
-🤝 Contributing
+```text
+Market Data
+     ↓
+Data Preprocessing
+     ↓
+Feature Engineering
+     ↓
+ML Model
+     ↓
+Prediction
+     ↓
+API Endpoint
+     ↓
+Dashboard Visualization
+```
 
-Contributions are welcome! Please follow these steps:
+### Retraining Models
 
-Fork the repository
-Create a feature branch (git checkout -b feature/amazing-feature)
-Commit your changes (git commit -m 'Add some amazing feature')
-Push to the branch (git push origin feature/amazing-feature)
-Open a Pull Request
+Model training scripts are available in:
 
-Please ensure:
+```text
+scripts/train_regressor.py
+Models/
+```
 
-Code follows the existing style
-Linter is happy (npm run lint)
-Documentation is updated
-📄 License
+You can retrain the models when updated market data or improved features are available.
 
-No license specified yet — add one (e.g. MIT) if you intend for others to reuse this code.
+---
 
-👥 Authors
+## 🔌 API Routes
 
-Created by Khushi Shah
+GlobalVestHub provides API endpoints through the Next.js App Router.
 
-Note: This is an active development project. For issues, questions, or suggestions, please open an issue on GitHub.
+### 🤖 AI
+
+```text
+/api/chat
+```
+
+Provides the AI-powered market assistant.
+
+### 📈 Market Data
+
+```text
+/api/stocks
+/api/indicators
+/api/sector-chart
+```
+
+Provides stock prices, technical indicators, and sector-level market information.
+
+### 💼 Portfolio & Watchlist
+
+```text
+/api/portfolio
+/api/watchlist
+```
+
+Used to manage user portfolios and saved stocks.
+
+### 📰 News
+
+```text
+/api/news
+```
+
+Fetches aggregated market and financial news.
+
+### 🧠 Machine Learning
+
+```text
+/api/predict-signal
+/api/future-returns
+/api/market-regime
+/api/stock-picker
+```
+
+These endpoints expose the application's ML-powered prediction capabilities.
+
+> For implementation details, see the corresponding files inside `src/app/api/`.
+
+---
+
+## 🚀 Deployment
+
+### Deploy with Vercel
+
+The recommended deployment platform is **Vercel**.
+
+#### 1. Push the Repository to GitHub
+
+```bash
+git add .
+git commit -m "Prepare application for deployment"
+git push origin main
+```
+
+#### 2. Connect to Vercel
+
+1. Open [Vercel](https://vercel.com/)
+2. Import the GitHub repository
+3. Configure the required environment variables
+4. Deploy the application
+
+Add the following environment variables in the Vercel dashboard:
+
+```env
+NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+```
+
+Vercel will automatically deploy new changes whenever you push to the connected repository.
+
+---
+
+## 🤝 Contributing
+
+Contributions are welcome!
+
+### Contribution Workflow
+
+```bash
+# Create a feature branch
+git checkout -b feature/amazing-feature
+
+# Make your changes
+
+# Commit your changes
+git commit -m "Add amazing feature"
+
+# Push the branch
+git push origin feature/amazing-feature
+```
+
+Then open a **Pull Request** on GitHub.
+
+### Before Submitting
+
+Please make sure:
+
+* [ ] Code follows the existing project style
+* [ ] `npm run lint` passes
+* [ ] New functionality is tested
+* [ ] Documentation is updated where necessary
+* [ ] No secrets or API keys are committed
+
+---
+
+## 📄 License
+
+No license has been specified yet.
+
+If you intend to allow others to freely use, modify, and distribute this project, consider adding an open-source license such as **MIT**.
+
+---
+
+## 👥 Author
+
+**Khushi Shah**
+
+GitHub: [@khushishah12](https://github.com/khushishah12)
+
+---
+
+> ⚠️ **Disclaimer:** GlobalVestHub is an educational and analytical project. ML predictions, market signals, and stock recommendations should not be considered financial advice. Always perform your own research before making investment decisions.
+
+---
+
+⭐ **If you find GlobalVestHub useful, consider giving the repository a star!**
